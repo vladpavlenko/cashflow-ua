@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="CashFlow UA">
+  <meta name="theme-color" content="#08090f">
+  <title>CashFlow UA</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== TOKENS ===== */
+    :root {
+      --bg:        #08090f;
+      --surface:   #111420;
+      --elevated:  #1a1e30;
+      --border:    #252840;
+      --gold:      #f5a623;
+      --gold-dim:  rgba(245,166,35,0.13);
+      --green:     #22c55e;
+      --green-dim: rgba(34,197,94,0.10);
+      --red:       #ef4444;
+      --red-dim:   rgba(239,68,68,0.10);
+      --text:      #e8ecf5;
+      --sub:       #8892aa;
+      --display:   'Cormorant Garamond', serif;
+      --mono:      'IBM Plex Mono', monospace;
+      --body:      'DM Sans', sans-serif;
+      --r:         12px;
+    }
+
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html { height: -webkit-fill-available; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+    }
+
+    /* ===== UTILITY ===== */
+    .hidden { display: none !important; }
+    .mono   { font-family: var(--mono); }
+    .green  { color: var(--green); }
+    .red    { color: var(--red); }
+    .gold   { color: var(--gold); }
+    .sub    { color: var(--sub); }
+
+    /* ===== SETUP SCREEN ===== */
+    #setup-screen {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      padding: 0 20px 40px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .logo-wrap {
+      padding: 56px 0 36px;
+      text-align: center;
+    }
+
+    .logo-wrap h1 {
+      font-family: var(--display);
+      font-size: 52px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 3px;
+      line-height: 1;
+    }
+
+    .logo-wrap p {
+      color: var(--sub);
+      font-size: 12px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .logo-cash {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--sub);
+      margin-top: 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--sub);
+      margin-bottom: 12px;
+    }
+
+    /* Name input */
+    .text-input {
+      width: 100%;
+      background: var(--elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .text-input:focus { border-color: var(--gold); }
+
+    /* Choice buttons 2-col */
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .choice-btn {
+      background: var(--elevated);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .choice-btn:active  { transform: scale(0.97); }
+    .choice-btn.sel     { border-color: var(--gold); background: var(--gold-dim); }
+    .choice-btn .icon   { font-size: 30px; margin-bottom: 6px; }
+    .choice-btn .lbl    { font-size: 14px; font-weight: 600; color: var(--text); }
+    .choice-btn .sub-lbl{ font-size: 11px; color: var(--sub); margin-top: 3px; }
+    .choice-btn.sel .lbl{ color: var(--gold); }
+
+    .choice-btn-wide {
+      background: var(--elevated);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .choice-btn-wide:active { transform: scale(0.98); }
+    .choice-btn-wide.sel    { border-color: var(--gold); background: var(--gold-dim); }
+    .choice-btn-wide .icon  { font-size: 26px; }
+    .choice-btn-wide .lbl   { font-size: 14px; font-weight: 600; }
+    .choice-btn-wide .sub-lbl { font-size: 12px; color: var(--sub); }
+    .choice-btn-wide.sel .lbl { color: var(--gold); }
+
+    /* Specialty list */
+    .spec-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .spec-item {
+      background: var(--elevated);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .spec-item:active { transform: scale(0.98); }
+    .spec-item.sel    { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+
+    /* Primary button */
+    .btn-primary {
+      width: 100%;
+      background: var(--gold);
+      color: #08090f;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: var(--body);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      margin-top: 16px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-primary:active   { transform: scale(0.98); opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ===== MAIN SCREEN ===== */
+    #main-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+
+    /* Header */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .hdr-left .player-name { font-size: 15px; font-weight: 600; }
+    .hdr-left .round-badge {
+      display: inline-block;
+      background: var(--gold-dim);
+      border: 1px solid var(--gold);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .hdr-right { text-align: right; }
+    .hdr-right .cash-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--sub); }
+    .hdr-right .cash-value { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--gold); }
+
+    /* Tab bar */
+    .tab-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+
+    .tab {
+      flex-shrink: 0;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sub);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /* Content */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 86px;
+    }
+
+    .tab-pane { padding: 16px; }
+
+    /* Summary bar */
+    .sum-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 10px 14px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .sum-item { flex: 1; text-align: center; padding: 7px 4px; border-radius: 10px; }
+    .sum-item.inc  { background: var(--green-dim); }
+    .sum-item.exp  { background: var(--red-dim); }
+    .sum-item.bal  { background: var(--elevated); }
+    .sum-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); margin-bottom: 2px; }
+    .sum-val   { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+    .sum-item.inc .sum-val  { color: var(--green); }
+    .sum-item.exp .sum-val  { color: var(--red); }
+    .sum-item.bal .sum-val.pos { color: var(--green); }
+    .sum-item.bal .sum-val.neg { color: var(--red); }
+
+    /* ===== OVERVIEW ===== */
+    .ov-cash {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 20px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .ov-cash-label { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: var(--sub); }
+    .ov-cash-val   { font-family: var(--display); font-size: 58px; font-weight: 700; color: var(--gold); line-height: 1; margin: 8px 0 4px; }
+    .ov-cash-curr  { font-size: 13px; color: var(--sub); }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .stat-card.inc-card { border-color: rgba(34,197,94,0.3); }
+    .stat-card.exp-card { border-color: rgba(239,68,68,0.3); }
+    .stat-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin-bottom: 5px; }
+    .stat-val { font-family: var(--mono); font-size: 20px; font-weight: 600; }
+    .stat-card.inc-card .stat-val { color: var(--green); }
+    .stat-card.exp-card .stat-val { color: var(--red); }
+
+    .bal-card {
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bal-card.pos { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.3); }
+    .bal-card.neg { background: var(--red-dim);   border: 1px solid rgba(239,68,68,0.3); }
+    .bal-card .bl { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); }
+    .bal-card .bv { font-family: var(--mono); font-size: 22px; font-weight: 600; }
+    .bal-card.pos .bv { color: var(--green); }
+    .bal-card.neg .bv { color: var(--red); }
+
+    .edu-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .edu-icon { font-size: 28px; }
+    .edu-text { font-size: 14px; font-weight: 600; }
+    .edu-sub  { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+    .btn-round {
+      width: 100%;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 15px;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: background 0.15s;
+    }
+    .btn-round:active { background: var(--surface); }
+
+    /* ===== SECTION HEADER ===== */
+    .sec-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 6px 0 12px;
+    }
+    .sec-title { font-family: var(--display); font-size: 22px; font-weight: 700; }
+
+    .btn-add {
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid rgba(245,166,35,0.4);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ===== FIN TABLE (income / expenses) ===== */
+    .fin-tbl {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    /* Income columns: Name | Base | Add | Mult | Total | Del */
+    .inc-row, .inc-head {
+      display: grid;
+      grid-template-columns: 1fr 52px 52px 52px 62px 28px;
+      padding: 11px 13px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .inc-row:last-child { border-bottom: none; }
+
+    .inc-head {
+      background: var(--elevated);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--sub);
+    }
+
+    .row-name  { font-size: 13px; font-weight: 500; }
+    .row-type  { font-size: 11px; color: var(--sub); margin-top: 1px; }
+    .col-r     { text-align: right; font-family: var(--mono); }
+    .col-final { text-align: right; font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--green); }
+    .col-final.red-val { color: var(--red); }
+
+    /* Expense columns: Name | Amount */
+    .exp-row, .exp-head {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      padding: 12px 14px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .exp-row:last-child { border-bottom: none; }
+    .exp-head {
+      background: var(--elevated);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--sub);
+    }
+
+    /* Total row */
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 14px;
+      background: var(--elevated);
+    }
+    .total-lbl { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); }
+    .total-val { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+    .total-val.green { color: var(--green); }
+    .total-val.red   { color: var(--red); }
+
+    /* Delete button */
+    .btn-del { background: none; border: none; color: var(--sub); cursor: pointer; padding: 4px; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+    .btn-del:active { color: var(--red); }
+
+    /* ===== HOUSING SECTION ===== */
+    .housing-block { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .housing-top   { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .housing-name  { font-size: 14px; font-weight: 500; }
+    .housing-base  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+    .htype-row { display: flex; gap: 6px; }
+    .htype-btn {
+      flex: 1;
+      padding: 7px 4px;
+      background: var(--elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--sub);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .htype-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+    /* ===== TOGGLE ROW ===== */
+    .tog-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tog-lbl  { font-size: 14px; font-weight: 500; }
+    .tog-sub  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+    .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .tog-slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 26px;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+    .tog-slider::before {
+      content: ""; position: absolute;
+      width: 20px; height: 20px;
+      left: 3px; bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+    input:checked + .tog-slider              { background: var(--gold); }
+    input:checked + .tog-slider::before      { transform: translateX(18px); }
+
+    /* ===== COUNTER ===== */
+    .counter-wrap { display: flex; align-items: center; gap: 10px; }
+    .counter-btn  {
+      width: 32px; height: 32px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none;
+    }
+    .counter-val { font-family: var(--mono); font-size: 20px; font-weight: 600; min-width: 24px; text-align: center; }
+
+    /* ===== LOAN CARD ===== */
+    .loan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+    .loan-hdr  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .loan-name { font-size: 15px; font-weight: 600; }
+    .loan-rate { font-size: 12px; color: var(--sub); margin-top: 2px; }
+    .loan-max  { font-family: var(--mono); font-size: 11px; color: var(--sub); }
+    .loan-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .loan-field label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); display: block; margin-bottom: 5px; }
+    .loan-input {
+      width: 100%;
+      background: var(--elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      outline: none;
+    }
+    .loan-input:focus { border-color: var(--gold); }
+    .loan-footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .loan-pay-lbl { font-size: 12px; color: var(--sub); }
+    .loan-pay-val { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--red); }
+
+    /* ===== COURSES / TRAININGS TABLE ===== */
+    .gen-tbl { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    .gen-head { background: var(--elevated); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); border-bottom: 1px solid var(--border); }
+
+    .crs-row, .crs-head { display: grid; grid-template-columns: 1fr 90px 62px 28px; padding: 11px 13px; align-items: center; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .crs-row:last-child  { border-bottom: none; }
+
+    .trn-row, .trn-head { display: grid; grid-template-columns: 1fr 52px 52px 52px 28px; padding: 11px 13px; align-items: center; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .trn-row:last-child  { border-bottom: none; }
+
+    .empty-msg { padding: 24px; text-align: center; color: var(--sub); font-size: 13px; }
+
+    /* ===== INFO BADGE ===== */
+    .info-badge {
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 12px;
+      color: var(--sub);
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+    .info-badge strong { color: var(--text); }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px 22px 0 0;
+      border-bottom: none;
+      padding: 24px 20px;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: slideUp 0.28s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .modal-title { font-family: var(--display); font-size: 24px; font-weight: 700; margin-bottom: 20px; }
+
+    .f-field { margin-bottom: 14px; }
+    .f-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); display: block; margin-bottom: 6px; }
+    .f-input {
+      width: 100%;
+      background: var(--elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .f-input:focus   { border-color: var(--gold); }
+    .f-select {
+      width: 100%;
+      background: var(--elevated);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 15px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .btn-cancel {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 13px;
+      color: var(--sub);
+      font-family: var(--body);
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Animations */
+    @keyframes fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    .tab-pane > * { animation: fadein 0.22s ease; }
+  </style>
+</head>
+<body>
+
+<!-- ==================== SETUP SCREEN ==================== -->
+<div id="setup-screen">
+  <div class="logo-wrap">
+    <h1>CashFlow</h1>
+    <p>Фінансова гра</p>
+    <div class="logo-cash mono sub">Початковий капітал: $500</div>
+  </div>
+
+  <!-- Player name -->
+  <div class="card">
+    <div class="card-label">Ім'я гравця</div>
+    <input type="text" class="text-input" id="inp-name" placeholder="Введіть ваше ім'я..." maxlength="20" autocomplete="off">
+  </div>
+
+  <!-- Education -->
+  <div class="card" id="card-edu">
+    <div class="card-label">Освіта — Раунд 1</div>
+    <div class="choice-grid">
+      <div class="choice-btn" id="btn-uni" onclick="pickEdu('university')">
+        <div class="icon">🎓</div>
+        <div class="lbl">Університет</div>
+        <div class="sub-lbl">4 спеціальності</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+      </div>
+      <div class="choice-btn" id="btn-col" onclick="pickEdu('college')">
+        <div class="icon">🔧</div>
+        <div class="lbl">Технікум</div>
+        <div class="sub-lbl">6 спеціальностей</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+      </div>
+    </div>
+    <div class="choice-btn-wide" id="btn-none" onclick="pickEdu('none')">
+      <span class="icon" style="font-size:22px">🚶</span>
+      <div>
+        <div class="lbl">Не навчатись</div>
+        <div class="sub-lbl">Квартира $200 • Без доходу</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specialty -->
+  <div class="card hidden" id="card-spec">
+    <div class="card-label" id="spec-label">Спеціальність</div>
+    <div class="spec-list" id="spec-list"></div>
+  </div>
+
+  <button class="btn-primary" onclick="startGame()">Почати гру →</button>
+</div>
+
+
+<!-- ==================== MAIN SCREEN ==================== -->
+<div id="main-screen" class="hidden">
+
+  <!-- Header -->
+  <div class="app-header">
+    <div class="hdr-left">
+      <div class="player-name" id="hdr-name">—</div>
+      <div class="round-badge" id="hdr-round">Раунд 1</div>
+    </div>
+    <div class="hdr-right">
+      <div class="cash-label">Готівка</div>
+      <div class="cash-value" id="hdr-cash">$500</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <div class="tab active" id="tab-ov"  onclick="setTab('ov')">Огляд</div>
+    <div class="tab"        id="tab-inc" onclick="setTab('inc')">Доходи</div>
+    <div class="tab"        id="tab-exp" onclick="setTab('exp')">Витрати</div>
+    <div class="tab"        id="tab-crs" onclick="setTab('crs')">Курси</div>
+    <div class="tab"        id="tab-trn" onclick="setTab('trn')">Тренінги</div>
+  </div>
+
+  <!-- Content area -->
+  <div class="content">
+
+    <!-- ── OVERVIEW ── -->
+    <div class="tab-pane" id="pane-ov">
+      <div class="ov-cash">
+        <div class="ov-cash-label">Поточна готівка</div>
+        <div class="ov-cash-val" id="ov-cash">$500</div>
+        <div class="ov-cash-curr">USD</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card inc-card">
+          <div class="stat-lbl">Дохід / раунд</div>
+          <div class="stat-val" id="ov-inc">$0</div>
+        </div>
+        <div class="stat-card exp-card">
+          <div class="stat-lbl">Витрати / раунд</div>
+          <div class="stat-val" id="ov-exp">$0</div>
+        </div>
+      </div>
+      <div class="bal-card pos" id="ov-bal-card">
+        <div class="bl">Сальдо</div>
+        <div class="bv" id="ov-bal">$0</div>
+      </div>
+      <div class="edu-badge">
+        <div class="edu-icon" id="ov-edu-icon">🎓</div>
+        <div>
+          <div class="edu-text" id="ov-edu-text">—</div>
+          <div class="edu-sub"  id="ov-edu-sub">—</div>
+        </div>
+      </div>
+      <button class="btn-round" onclick="openEndRound()">Завершити раунд →</button>
+    </div>
+
+    <!-- ── INCOME ── -->
+    <div class="tab-pane hidden" id="pane-inc">
+      <div class="sec-hdr">
+        <div class="sec-title">Доходи</div>
+        <button class="btn-add" onclick="openModal('m-inc')">+ Додати</button>
+      </div>
+      <div class="fin-tbl">
+        <div class="inc-head">
+          <div>Назва / Тип</div>
+          <div class="col-r">База</div>
+          <div class="col-r">Дод.</div>
+          <div class="col-r">Кратн.</div>
+          <div class="col-r">Підсум.</div>
+          <div></div>
+        </div>
+        <div id="inc-rows"></div>
+        <div class="total-row">
+          <div class="total-lbl">Усього доходів</div>
+          <div class="total-val green" id="inc-total">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EXPENSES ── -->
+    <div class="tab-pane hidden" id="pane-exp">
+      <div class="sec-hdr"><div class="sec-title">Витрати</div></div>
+
+      <!-- Basic expenses -->
+      <div class="fin-tbl">
+        <div class="exp-head"><div>Стаття</div><div style="text-align:right">Сума</div></div>
+
+        <!-- Housing -->
+        <div class="housing-block">
+          <div class="housing-top">
+            <div>
+              <div class="housing-name" id="exp-h-lbl">Гуртожиток</div>
+              <div class="housing-base" id="exp-h-base">Базова: $100</div>
+            </div>
+            <div class="col-final red-val" id="exp-h-val">$100</div>
+          </div>
+          <div class="htype-row">
+            <div class="htype-btn active" id="ht-self"    onclick="setHType('self')">Я плачу</div>
+            <div class="htype-btn"        id="ht-partner" onclick="setHType('partner')">Вона платить</div>
+            <div class="htype-btn"        id="ht-split"   onclick="setHType('split')">Навпіл</div>
+          </div>
+        </div>
+
+        <div class="exp-row"><div class="row-name">🍕 Їжа</div>        <div class="col-final red-val" id="exp-food">$0</div></div>
+        <div class="exp-row"><div class="row-name">📱 Зв'язок</div>     <div class="col-final red-val" id="exp-comm">$0</div></div>
+        <div class="exp-row"><div class="row-name">🚌 Транспорт</div>  <div class="col-final red-val" id="exp-tran">$0</div></div>
+
+        <div class="total-row">
+          <div class="total-lbl">Базові витрати</div>
+          <div class="total-val red" id="basic-total">$0</div>
+        </div>
+      </div>
+
+      <!-- Family -->
+      <div class="sec-hdr" style="margin-top:4px"><div class="sec-title">Сім'я</div></div>
+      <div class="fin-tbl">
+        <!-- Wife toggle -->
+        <div class="tog-row">
+          <div>
+            <div class="tog-lbl">💍 Дружина</div>
+            <div class="tog-sub" id="wife-sub">не одружений</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="wife-tog" onchange="toggleWife(this.checked)">
+            <span class="tog-slider"></span>
+          </label>
+        </div>
+        <!-- Wife expense input (shown when toggled) -->
+        <div class="exp-row hidden" id="wife-exp-row" style="border-bottom:1px solid var(--border)">
+          <div class="row-name">Витрати на дружину ($)</div>
+          <input type="number" class="loan-input" id="wife-inp" style="width:80px;text-align:right" value="0" min="0" onchange="setWifeExp(this.value)">
+        </div>
+
+        <!-- Children -->
+        <div class="tog-row" style="border-bottom:none">
+          <div>
+            <div class="tog-lbl">👶 Діти</div>
+            <div class="tog-sub">$50 за дитину · макс. 3</div>
+          </div>
+          <div class="counter-wrap">
+            <button class="counter-btn" onclick="stepKids(-1)">−</button>
+            <span class="counter-val" id="kids-val">0</span>
+            <button class="counter-btn" onclick="stepKids(1)">+</button>
+          </div>
+        </div>
+
+        <div class="total-row">
+          <div class="total-lbl">Витрати сім'ї</div>
+          <div class="total-val red" id="family-total">$0</div>
+        </div>
+      </div>
+
+      <!-- Loans -->
+      <div class="sec-hdr" style="margin-top:4px"><div class="sec-title">Кредити</div></div>
+
+      <div class="loan-card">
+        <div class="loan-hdr">
+          <div><div class="loan-name">🏦 Банк</div><div class="loan-rate">3% річних · 1 рік = 1 раунд</div></div>
+          <div class="loan-max">Ліміт: $3,000</div>
+        </div>
+        <div class="loan-fields">
+          <div class="loan-field">
+            <label>Сума позики</label>
+            <input type="number" class="loan-input" id="bank-amt" max="3000" min="0" placeholder="0" onchange="calcLoan('bank')">
+          </div>
+          <div class="loan-field">
+            <label>Залишок боргу</label>
+            <input type="number" class="loan-input" id="bank-rem" max="3000" min="0" placeholder="0" onchange="calcLoan('bank')">
+          </div>
+        </div>
+        <div class="loan-footer">
+          <div class="loan-pay-lbl">Виплата за раунд</div>
+          <div class="loan-pay-val" id="bank-pay">$0</div>
+        </div>
+      </div>
+
+      <div class="loan-card">
+        <div class="loan-hdr">
+          <div><div class="loan-name">💸 Мікрокредит</div><div class="loan-rate">30% річних · 1 рік = 1 раунд</div></div>
+          <div class="loan-max">Ліміт: $30,000</div>
+        </div>
+        <div class="loan-fields">
+          <div class="loan-field">
+            <label>Сума позики</label>
+            <input type="number" class="loan-input" id="micro-amt" max="30000" min="0" placeholder="0" onchange="calcLoan('micro')">
+          </div>
+          <div class="loan-field">
+            <label>Залишок боргу</label>
+            <input type="number" class="loan-input" id="micro-rem" max="30000" min="0" placeholder="0" onchange="calcLoan('micro')">
+          </div>
+        </div>
+        <div class="loan-footer">
+          <div class="loan-pay-lbl">Виплата за раунд</div>
+          <div class="loan-pay-val" id="micro-pay">$0</div>
+        </div>
+      </div>
+
+      <!-- Grand total expenses -->
+      <div class="fin-tbl">
+        <div class="total-row">
+          <div class="total-lbl">Усього витрат</div>
+          <div class="total-val red" id="exp-grand">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COURSES ── -->
+    <div class="tab-pane hidden" id="pane-crs">
+      <div class="sec-hdr">
+        <div class="sec-title">Курси</div>
+        <button class="btn-add" onclick="openModal('m-crs')">+ Додати</button>
+      </div>
+      <div class="info-badge">
+        Курс збільшує <strong>Додаткову оплату</strong> у доходах, де <strong>Сфера</strong> курсу збігається зі сферою роботи.
+      </div>
+      <div class="gen-tbl">
+        <div class="crs-head gen-head">
+          <div>Назва</div><div>Сфера</div><div style="text-align:right">+Дохід</div><div></div>
+        </div>
+        <div id="crs-rows"><div class="empty-msg">Курсів поки немає</div></div>
+      </div>
+    </div>
+
+    <!-- ── TRAININGS ── -->
+    <div class="tab-pane hidden" id="pane-trn">
+      <div class="sec-hdr">
+        <div class="sec-title">Тренінги</div>
+        <button class="btn-add" onclick="openModal('m-trn')">+ Додати</button>
+      </div>
+      <div class="info-badge">
+        Тренінг збільшує <strong>Множник</strong> для відповідного типу доходу. Множники перемножуються між собою.
+      </div>
+      <div class="gen-tbl">
+        <div class="trn-head gen-head">
+          <div>Назва</div>
+          <div style="text-align:right">Найм.</div>
+          <div style="text-align:right">На себе</div>
+          <div style="text-align:right">Бізнес</div>
+          <div></div>
+        </div>
+        <div id="trn-rows"><div class="empty-msg">Тренінгів поки немає</div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Summary bar -->
+  <div class="sum-bar">
+    <div class="sum-item inc">
+      <div class="sum-label">Дохід</div>
+      <div class="sum-val" id="bar-inc">$0</div>
+    </div>
+    <div class="sum-item exp">
+      <div class="sum-label">Витрати</div>
+      <div class="sum-val" id="bar-exp">$0</div>
+    </div>
+    <div class="sum-item bal">
+      <div class="sum-label">Сальдо</div>
+      <div class="sum-val pos" id="bar-bal">$0</div>
+    </div>
+  </div>
+
+</div><!-- /main-screen -->
+
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Add Income -->
+<div class="modal-overlay hidden" id="m-inc" onclick="overlayClose(event,'m-inc')">
+  <div class="modal">
+    <div class="modal-title">Новий дохід</div>
+    <div class="f-field">
+      <label class="f-label">Назва</label>
+      <input type="text" class="f-input" id="mi-name" placeholder="напр. Зарплата" autocomplete="off">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Тип доходу</label>
+      <select class="f-select" id="mi-type">
+        <option value="employee">Активний — Найманий (робота на дядю)</option>
+        <option value="self">Активний — На себе</option>
+        <option value="stipend">Стипендія</option>
+        <option value="passive">Пасивний (стартап / бізнес)</option>
+      </select>
+    </div>
+    <div class="f-field">
+      <label class="f-label">Базова оплата ($)</label>
+      <input type="number" class="f-input" id="mi-base" placeholder="0" min="0">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Сфера (для курсів)</label>
+      <input type="text" class="f-input" id="mi-field" placeholder="напр. Фінанси, IT, Медицина…" autocomplete="off">
+    </div>
+    <button class="btn-primary" onclick="saveIncome()">Зберегти</button>
+    <button class="btn-cancel"  onclick="closeModal('m-inc')">Скасувати</button>
+  </div>
+</div>
+
+<!-- Add Course -->
+<div class="modal-overlay hidden" id="m-crs" onclick="overlayClose(event,'m-crs')">
+  <div class="modal">
+    <div class="modal-title">Новий курс</div>
+    <div class="f-field">
+      <label class="f-label">Назва курсу</label>
+      <input type="text" class="f-input" id="mc-name" placeholder="напр. Excel Advanced" autocomplete="off">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Сфера застосування</label>
+      <input type="text" class="f-input" id="mc-field" placeholder="напр. Фінанси, IT…" autocomplete="off">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Додаткова оплата ($)</label>
+      <input type="number" class="f-input" id="mc-pay" placeholder="0" min="0">
+    </div>
+    <button class="btn-primary" onclick="saveCourse()">Зберегти</button>
+    <button class="btn-cancel"  onclick="closeModal('m-crs')">Скасувати</button>
+  </div>
+</div>
+
+<!-- Add Training -->
+<div class="modal-overlay hidden" id="m-trn" onclick="overlayClose(event,'m-trn')">
+  <div class="modal">
+    <div class="modal-title">Новий тренінг</div>
+    <div class="f-field">
+      <label class="f-label">Назва тренінгу</label>
+      <input type="text" class="f-input" id="mt-name" placeholder="напр. Управління часом" autocomplete="off">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Множник для найманця (×)</label>
+      <input type="number" class="f-input" id="mt-emp" placeholder="1.0" step="0.01" min="0">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Множник для роботи на себе (×)</label>
+      <input type="number" class="f-input" id="mt-self" placeholder="1.0" step="0.01" min="0">
+    </div>
+    <div class="f-field">
+      <label class="f-label">Множник для бізнесу / стартапу (×)</label>
+      <input type="number" class="f-input" id="mt-biz" placeholder="1.0" step="0.01" min="0">
+    </div>
+    <button class="btn-primary" onclick="saveTraining()">Зберегти</button>
+    <button class="btn-cancel"  onclick="closeModal('m-trn')">Скасувати</button>
+  </div>
+</div>
+
+<!-- End Round Confirm -->
+<div class="modal-overlay hidden" id="m-end" onclick="overlayClose(event,'m-end')">
+  <div class="modal">
+    <div class="modal-title" id="er-title">Завершити Раунд 1</div>
+    <div class="info-badge" id="er-badge">—</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:4px 0 16px">
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span class="sub">Поточна готівка:</span>
+        <span class="mono" id="er-cur">$500</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span class="green">+ Доходи:</span>
+        <span class="mono green" id="er-inc">$0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span class="red">− Витрати:</span>
+        <span class="mono red" id="er-exp">$0</span>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:17px;font-weight:700">
+        <span>= Нова готівка:</span>
+        <span class="mono" id="er-new">$500</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="confirmRound()">Підтвердити</button>
+    <button class="btn-cancel"  onclick="closeModal('m-end')">Скасувати</button>
+  </div>
+</div>
+
+
+<!-- ==================== SCRIPT ==================== -->
+<script>
+// ─────────────────── CONSTANTS ───────────────────
+const UNI_SPECS = [
+  { id:'eco', name:'Економічний',   icon:'📊', field:'Економіка' },
+  { id:'law', name:'Юридичний',     icon:'⚖️', field:'Право' },
+  { id:'hum', name:'Гуманітарний',  icon:'📚', field:'Гуманітарні науки' },
+  { id:'psy', name:'Психологічний', icon:'🧠', field:'Психологія' },
+];
+
+const COL_SPECS = [
+  { id:'mech',  name:'Механік',     icon:'⚙️',  field:'Механіка' },
+  { id:'cook',  name:'Кухар',       icon:'👨‍🍳', field:'Кулінарія' },
+  { id:'tailor',name:'Швея',        icon:'🧵',  field:'Швейна справа' },
+  { id:'elec',  name:'Електрик',    icon:'⚡',   field:'Електрика' },
+  { id:'build', name:'Будівельник', icon:'🏗️',  field:'Будівництво' },
+  { id:'auto',  name:'Автомеханік', icon:'🚗',  field:'Автосправа' },
+];
+
+// ─────────────────── STATE ───────────────────
+let S = {
+  playerName: '',
+  cash: 500,
+  round: 1,
+  education: null,  // 'university' | 'college' | 'none'
+  specialty: null,  // specialty object
+
+  incomes: [],      // { id, type, name, basePay, field }
+  // type: 'employee' | 'self' | 'stipend' | 'passive'
+
+  exp: {
+    housingLabel: 'Гуртожиток',
+    housingBase: 100,
+    housingType: 'self',  // 'self' | 'partner' | 'split'
+    food: 30,
+    comm: 10,
+    transport: 20,
+    hasWife: false,
+    wifeAmt: 0,
+    kids: 0,
+  },
+
+  loans: {
+    bankAmt: 0, bankRem: 0,
+    microAmt: 0, microRem: 0,
+  },
+
+  courses:   [],  // { id, name, field, pay }
+  trainings: [],  // { id, name, mEmp, mSelf, mBiz }
+
+  tab: 'ov',
+};
+
+// ─────────────────── SETUP ───────────────────
+let _setupEdu  = null;
+let _setupSpec = null;
+
+function pickEdu(type) {
+  _setupEdu  = type;
+  _setupSpec = type === 'none' ? 'none' : null;
+
+  ['uni','col','none'].forEach(k =>
+    document.getElementById('btn-'+k).classList.toggle('sel', k === type ||
+      (type === 'university' && k === 'uni') ||
+      (type === 'college'    && k === 'col') ||
+      (type === 'none'       && k === 'none')
+    )
+  );
+
+  const specCard = document.getElementById('card-spec');
+  if (type === 'none') {
+    specCard.classList.add('hidden');
+    return;
+  }
+  specCard.classList.remove('hidden');
+  document.getElementById('spec-label').textContent =
+    type === 'university' ? 'Спеціальність (університет)' : 'Спеціальність (технікум)';
+  renderSpecList(type === 'university' ? UNI_SPECS : COL_SPECS);
+}
+
+function renderSpecList(arr) {
+  _setupSpec = null;
+  document.getElementById('spec-list').innerHTML = arr.map(s =>
+    `<div class="spec-item" id="si-${s.id}" onclick="pickSpec('${s.id}')">
+       <span>${s.icon}</span><span>${s.name}</span>
+     </div>`
+  ).join('');
+}
+
+function pickSpec(id) {
+  _setupSpec = id;
+  document.querySelectorAll('.spec-item').forEach(el => el.classList.remove('sel'));
+  document.getElementById('si-'+id).classList.add('sel');
+}
+
+function startGame() {
+  const name = document.getElementById('inp-name').value.trim();
+  if (!name)        { alert('Введіть ваше ім\'я!'); return; }
+  if (!_setupEdu)   { alert('Оберіть тип освіти!'); return; }
+  if (_setupEdu !== 'none' && !_setupSpec) { alert('Оберіть спеціальність!'); return; }
+
+  S.playerName = name;
+  S.education  = _setupEdu;
+
+  if (_setupEdu !== 'none') {
+    const all = [...UNI_SPECS, ...COL_SPECS];
+    S.specialty = all.find(s => s.id === _setupSpec);
+    S.exp.housingLabel   = 'Гуртожиток';
+    S.exp.housingBase    = 100;
+    S.exp.food           = 30;
+    S.exp.comm           = 10;
+    S.exp.transport      = 20;
+    // Auto-add stipend
+    S.incomes.push({ id:'stip0', type:'stipend', name:'Стипендія', basePay:30, field:'' });
+  } else {
+    S.specialty           = null;
+    S.exp.housingLabel    = 'Квартира';
+    S.exp.housingBase     = 200;
+    S.exp.food            = 30;
+    S.exp.comm            = 10;
+    S.exp.transport       = 40;
+  }
+
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.remove('hidden');
+  save(); renderAll();
+}
+
+// ─────────────────── CALCULATIONS ───────────────────
+function addPay(inc) {
+  if (!inc.field) return 0;
+  return S.courses
+    .filter(c => c.field.trim().toLowerCase() === inc.field.trim().toLowerCase())
+    .reduce((s, c) => s + (parseFloat(c.pay)||0), 0);
+}
+
+function multiplier(inc) {
+  return S.trainings.reduce((m, t) => {
+    const v = inc.type === 'employee' ? t.mEmp :
+              inc.type === 'self'     ? t.mSelf :
+              inc.type === 'passive'  ? t.mBiz  : 1;
+    return m * (parseFloat(v)||1);
+  }, 1);
+}
+
+function finalInc(inc) {
+  return ((parseFloat(inc.basePay)||0) + addPay(inc)) * multiplier(inc);
+}
+
+function totalInc()    { return S.incomes.reduce((s,i) => s + finalInc(i), 0); }
+function housingExp()  {
+  const b = S.exp.housingBase;
+  return S.exp.housingType === 'partner' ? 0 :
+         S.exp.housingType === 'split'   ? b/2 : b;
+}
+function totalExp()    {
+  return housingExp()
+       + S.exp.food + S.exp.comm + S.exp.transport
+       + (S.exp.hasWife ? (parseFloat(S.exp.wifeAmt)||0) : 0)
+       + S.exp.kids * 50
+       + (parseFloat(S.loans.bankRem)||0)  * 0.03
+       + (parseFloat(S.loans.microRem)||0) * 0.30;
+}
+function balance()     { return totalInc() - totalExp(); }
+
+function fmt(n)        { return '$' + Math.abs(n).toFixed(0); }
+function fmtSigned(n)  { return (n >= 0 ? '+' : '−') + fmt(n); }
+
+// ─────────────────── RENDER ALL ───────────────────
+function renderAll() {
+  renderHeader();
+  renderSumBar();
+  const t = S.tab;
+  if (t === 'ov')  renderOv();
+  if (t === 'inc') renderInc();
+  if (t === 'exp') renderExp();
+  if (t === 'crs') renderCrs();
+  if (t === 'trn') renderTrn();
+}
+
+function renderHeader() {
+  document.getElementById('hdr-name').textContent  = S.playerName;
+  document.getElementById('hdr-round').textContent = 'Раунд ' + S.round;
+  document.getElementById('hdr-cash').textContent  = fmt(S.cash);
+}
+
+function renderSumBar() {
+  const i = totalInc(), e = totalExp(), b = balance();
+  document.getElementById('bar-inc').textContent = fmt(i);
+  document.getElementById('bar-exp').textContent = fmt(e);
+  const el = document.getElementById('bar-bal');
+  el.textContent = fmtSigned(b);
+  el.className   = 'sum-val ' + (b >= 0 ? 'pos' : 'neg');
+}
+
+function renderOv() {
+  const i = totalInc(), e = totalExp(), b = balance();
+  document.getElementById('ov-cash').textContent = fmt(S.cash);
+  document.getElementById('ov-inc').textContent  = fmt(i);
+  document.getElementById('ov-exp').textContent  = fmt(e);
+  document.getElementById('ov-bal').textContent  = fmtSigned(b);
+  const bc = document.getElementById('ov-bal-card');
+  bc.className = 'bal-card ' + (b >= 0 ? 'pos' : 'neg');
+
+  const icon = document.getElementById('ov-edu-icon');
+  const text = document.getElementById('ov-edu-text');
+  const sub  = document.getElementById('ov-edu-sub');
+  if (S.education === 'university') {
+    icon.textContent = '🎓';
+    text.textContent = 'Студент університету';
+    sub.textContent  = 'Спеціальність: ' + (S.specialty?.name ?? '—');
+  } else if (S.education === 'college') {
+    icon.textContent = '🔧';
+    text.textContent = 'Студент технікуму';
+    sub.textContent  = 'Спеціальність: ' + (S.specialty?.name ?? '—');
+  } else {
+    icon.textContent = '🚶';
+    text.textContent = 'Без освіти';
+    sub.textContent  = 'Знімає квартиру';
+  }
+}
+
+function renderInc() {
+  const el = document.getElementById('inc-rows');
+  if (S.incomes.length === 0) {
+    el.innerHTML = '<div class="empty-msg">Доходів поки немає</div>'; return;
+  }
+  const typeLbl = { employee:'Найманий', self:'На себе', stipend:'Стипендія', passive:'Пасивний' };
+  el.innerHTML = S.incomes.map(inc => {
+    const ap = addPay(inc), mx = multiplier(inc), fi = finalInc(inc);
+    return `<div class="inc-row">
+      <div>
+        <div class="row-name">${inc.name}</div>
+        <div class="row-type">${typeLbl[inc.type]||inc.type}${inc.field ? ' · '+inc.field : ''}</div>
+      </div>
+      <div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div>
+      <div class="col-r gold">+$${ap.toFixed(0)}</div>
+      <div class="col-r sub">×${mx.toFixed(2)}</div>
+      <div class="col-final">$${fi.toFixed(0)}</div>
+      <button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>
+    </div>`;
+  }).join('');
+  document.getElementById('inc-total').textContent = fmt(totalInc());
+}
+
+function renderExp() {
+  // Housing
+  document.getElementById('exp-h-lbl').textContent  = S.exp.housingLabel;
+  document.getElementById('exp-h-base').textContent = 'Базова: $' + S.exp.housingBase;
+  document.getElementById('exp-h-val').textContent  = fmt(housingExp());
+  ['self','partner','split'].forEach(t =>
+    document.getElementById('ht-'+t).classList.toggle('active', t === S.exp.housingType));
+
+  document.getElementById('exp-food').textContent = fmt(S.exp.food);
+  document.getElementById('exp-comm').textContent = fmt(S.exp.comm);
+  document.getElementById('exp-tran').textContent = fmt(S.exp.transport);
+
+  const basic = housingExp() + S.exp.food + S.exp.comm + S.exp.transport;
+  document.getElementById('basic-total').textContent = fmt(basic);
+
+  // Wife
+  const wt = document.getElementById('wife-tog');
+  wt.checked = S.exp.hasWife;
+  document.getElementById('wife-sub').textContent  = S.exp.hasWife ? '+$'+(S.exp.wifeAmt||0)+'/раунд' : 'не одружений';
+  document.getElementById('wife-exp-row').classList.toggle('hidden', !S.exp.hasWife);
+  document.getElementById('wife-inp').value = S.exp.wifeAmt || 0;
+
+  // Kids
+  document.getElementById('kids-val').textContent = S.exp.kids;
+
+  const fam = (S.exp.hasWife ? (parseFloat(S.exp.wifeAmt)||0) : 0) + S.exp.kids * 50;
+  document.getElementById('family-total').textContent = fmt(fam);
+
+  // Loans
+  const bp = (parseFloat(S.loans.bankRem)||0)  * 0.03;
+  const mp = (parseFloat(S.loans.microRem)||0) * 0.30;
+  document.getElementById('bank-pay').textContent  = fmt(bp);
+  document.getElementById('micro-pay').textContent = fmt(mp);
+
+  document.getElementById('exp-grand').textContent = fmt(totalExp());
+}
+
+function renderCrs() {
+  const el = document.getElementById('crs-rows');
+  if (S.courses.length === 0) { el.innerHTML = '<div class="empty-msg">Курсів поки немає</div>'; return; }
+  el.innerHTML = S.courses.map(c => `
+    <div class="crs-row">
+      <div>${c.name}</div>
+      <div class="sub" style="font-size:12px">${c.field}</div>
+      <div class="col-r gold">+$${(parseFloat(c.pay)||0).toFixed(0)}</div>
+      <button class="btn-del" onclick="delCourse('${c.id}')">✕</button>
+    </div>`).join('');
+}
+
+function renderTrn() {
+  const el = document.getElementById('trn-rows');
+  if (S.trainings.length === 0) { el.innerHTML = '<div class="empty-msg">Тренінгів поки немає</div>'; return; }
+  el.innerHTML = S.trainings.map(t => `
+    <div class="trn-row">
+      <div>${t.name}</div>
+      <div class="col-r gold">×${(parseFloat(t.mEmp)||1).toFixed(2)}</div>
+      <div class="col-r gold">×${(parseFloat(t.mSelf)||1).toFixed(2)}</div>
+      <div class="col-r gold">×${(parseFloat(t.mBiz)||1).toFixed(2)}</div>
+      <button class="btn-del" onclick="delTraining('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
+// ─────────────────── TABS ───────────────────
+function setTab(id) {
+  S.tab = id;
+  ['ov','inc','exp','crs','trn'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === id);
+    document.getElementById('pane-'+t).classList.toggle('hidden', t !== id);
+  });
+  renderAll();
+}
+
+// ─────────────────── ACTIONS ───────────────────
+function setHType(t) {
+  S.exp.housingType = t;
+  save(); renderExp(); renderSumBar();
+}
+
+function toggleWife(v) {
+  S.exp.hasWife = v;
+  if (!v) S.exp.wifeAmt = 0;
+  save(); renderExp(); renderSumBar();
+}
+
+function setWifeExp(v) {
+  S.exp.wifeAmt = parseFloat(v) || 0;
+  save(); renderExp(); renderSumBar();
+}
+
+function stepKids(d) {
+  S.exp.kids = Math.max(0, Math.min(3, S.exp.kids + d));
+  save(); renderExp(); renderSumBar();
+}
+
+function calcLoan(type) {
+  if (type === 'bank') {
+    S.loans.bankAmt = parseFloat(document.getElementById('bank-amt').value)||0;
+    S.loans.bankRem = Math.min(parseFloat(document.getElementById('bank-rem').value)||0, 3000);
+    document.getElementById('bank-rem').value = S.loans.bankRem || '';
+  } else {
+    S.loans.microAmt = parseFloat(document.getElementById('micro-amt').value)||0;
+    S.loans.microRem = Math.min(parseFloat(document.getElementById('micro-rem').value)||0, 30000);
+    document.getElementById('micro-rem').value = S.loans.microRem || '';
+  }
+  save(); renderExp(); renderSumBar();
+}
+
+// ─────────────────── INCOME CRUD ───────────────────
+function saveIncome() {
+  const name = document.getElementById('mi-name').value.trim();
+  if (!name) { alert('Введіть назву!'); return; }
+  S.incomes.push({
+    id:      'i' + Date.now(),
+    type:    document.getElementById('mi-type').value,
+    name,
+    basePay: parseFloat(document.getElementById('mi-base').value)||0,
+    field:   document.getElementById('mi-field').value.trim(),
+  });
+  closeModal('m-inc'); save(); renderAll();
+}
+
+function delIncome(id) {
+  S.incomes = S.incomes.filter(i => i.id !== id);
+  save(); renderAll();
+}
+
+// ─────────────────── COURSE CRUD ───────────────────
+function saveCourse() {
+  const name = document.getElementById('mc-name').value.trim();
+  if (!name) { alert('Введіть назву!'); return; }
+  S.courses.push({
+    id:    'c' + Date.now(),
+    name,
+    field: document.getElementById('mc-field').value.trim(),
+    pay:   parseFloat(document.getElementById('mc-pay').value)||0,
+  });
+  closeModal('m-crs'); save(); renderAll();
+}
+
+function delCourse(id) {
+  S.courses = S.courses.filter(c => c.id !== id);
+  save(); renderAll();
+}
+
+// ─────────────────── TRAINING CRUD ───────────────────
+function saveTraining() {
+  const name = document.getElementById('mt-name').value.trim();
+  if (!name) { alert('Введіть назву!'); return; }
+  S.trainings.push({
+    id:    't' + Date.now(),
+    name,
+    mEmp:  parseFloat(document.getElementById('mt-emp').value)||1,
+    mSelf: parseFloat(document.getElementById('mt-self').value)||1,
+    mBiz:  parseFloat(document.getElementById('mt-biz').value)||1,
+  });
+  closeModal('m-trn'); save(); renderAll();
+}
+
+function delTraining(id) {
+  S.trainings = S.trainings.filter(t => t.id !== id);
+  save(); renderAll();
+}
+
+// ─────────────────── ROUND END ───────────────────
+function openEndRound() {
+  const i = totalInc(), e = totalExp(), b = balance();
+  const newC = S.cash + b;
+  document.getElementById('er-title').textContent = 'Завершити Раунд ' + S.round;
+  document.getElementById('er-cur').textContent   = fmt(S.cash);
+  document.getElementById('er-inc').textContent   = '+' + fmt(i);
+  document.getElementById('er-exp').textContent   = '−' + fmt(e);
+  document.getElementById('er-new').textContent   = fmt(newC);
+  document.getElementById('er-new').className     = 'mono ' + (newC >= 0 ? 'green' : 'red');
+  document.getElementById('er-badge').innerHTML   =
+    `Сальдо <strong style="color:${b>=0?'var(--green)':'var(--red)'}">${fmtSigned(b)}</strong> буде ${b>=0?'додано до':'знято з'} готівки`;
+  openModal('m-end');
+}
+
+function confirmRound() {
+  S.cash += balance();
+  S.round++;
+  closeModal('m-end');
+  save(); renderAll();
+}
+
+// ─────────────────── MODALS ───────────────────
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function overlayClose(e, id) { if (e.target.classList.contains('modal-overlay')) closeModal(id); }
+
+// ─────────────────── PERSISTENCE ───────────────────
+function save() {
+  try { localStorage.setItem('cf_state', JSON.stringify(S)); } catch(e) {}
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('cf_state');
+    if (d) { Object.assign(S, JSON.parse(d)); return true; }
+  } catch(e) {}
+  return false;
+}
+
+// ─────────────────── INIT ───────────────────
+function init() {
+  if (load() && S.playerName) {
+    document.getElementById('setup-screen').classList.add('hidden');
+    document.getElementById('main-screen').classList.remove('hidden');
+    // Restore loan inputs
+    document.getElementById('bank-amt').value  = S.loans.bankAmt  || '';
+    document.getElementById('bank-rem').value  = S.loans.bankRem  || '';
+    document.getElementById('micro-amt').value = S.loans.microAmt || '';
+    document.getElementById('micro-rem').value = S.loans.microRem || '';
+    renderAll();
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+init();
+</script>
+</body>
+</html>
