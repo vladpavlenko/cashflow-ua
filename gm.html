@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#08090f">
+  <title>CashFlow GM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script type="module">
+    import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    /* ═══════════════════════════════════════
+       🔥 ТІ САМІ КЛЮЧІ ЩО В index.html
+    ═══════════════════════════════════════ */
+    const firebaseConfig = {
+        apiKey: "AIzaSyAOjnui8wVleQ-pNbGculhezKHrnEgLQcw",
+        authDomain: "cashflow-ua.firebaseapp.com",
+        databaseURL: "https://cashflow-ua-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "cashflow-ua",
+        storageBucket: "cashflow-ua.firebasestorage.app",
+        messagingSenderId: "883578570835",
+        appId: "1:883578570835:web:dc441ce423516663575ea6"
+    };
+
+    let _app, _db, _unsubscribe=null;
+
+    window._gmConnect = (roomCode) => {
+      if (!_app) {
+        _app = initializeApp(firebaseConfig);
+        _db  = getDatabase(_app);
+      }
+      if (_unsubscribe) _unsubscribe();
+      const r = ref(_db, `rooms/${roomCode.toUpperCase()}/players`);
+      _unsubscribe = onValue(r, snap => {
+        const data = snap.val() || {};
+        window._gmOnUpdate(data);
+      }, err => {
+        console.error('Firebase error:', err);
+        window._gmOnError(err.message);
+      });
+    };
+
+    window._gmCreateRoom = async (roomCode) => {
+      if (!_app) {
+        _app = initializeApp(firebaseConfig);
+        _db  = getDatabase(_app);
+      }
+      try {
+        await set(ref(_db, `rooms/${roomCode.toUpperCase()}/_created`), Date.now());
+        return true;
+      } catch(e) { return false; }
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg:        #08090f;
+      --surface:   #111420;
+      --elevated:  #1a1e30;
+      --border:    #252840;
+      --gold:      #f5a623;
+      --gold-dim:  rgba(245,166,35,0.13);
+      --green:     #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --red:       #ef4444;
+      --red-dim:   rgba(239,68,68,0.12);
+      --blue:      #60a5fa;
+      --blue-dim:  rgba(96,165,250,0.12);
+      --text:      #e8ecf5;
+      --sub:       #8892aa;
+      --mono:      'IBM Plex Mono', monospace;
+      --display:   'Cormorant Garamond', serif;
+      --body:      'DM Sans', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--body); min-height: 100vh; }
+    .mono { font-family: var(--mono); }
+    .green { color: var(--green); } .red { color: var(--red); } .gold { color: var(--gold); } .sub { color: var(--sub); }
+    .hidden { display: none !important; }
+
+    /* ── LOGIN SCREEN ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .logo { font-family: var(--display); font-size: 48px; font-weight: 700; color: var(--gold); letter-spacing: 3px; }
+    .logo-sub { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: var(--sub); margin-top: 6px; margin-bottom: 40px; }
+
+    .gm-badge {
+      background: var(--blue-dim);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: 8px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .login-card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+    }
+
+    .login-card h2 { font-family: var(--display); font-size: 26px; font-weight: 700; margin-bottom: 20px; }
+
+    .f-group { margin-bottom: 16px; }
+    .f-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); display: block; margin-bottom: 6px; }
+    .f-input  { width:100%; background:var(--elevated); border:1.5px solid var(--border); border-radius:10px; padding:14px 16px; color:var(--text); font-family:var(--mono); font-size:22px; font-weight:600; letter-spacing:6px; text-align:center; text-transform:uppercase; outline:none; transition:border-color 0.2s; }
+    .f-input::placeholder { color: rgba(245,166,35,0.3); letter-spacing:5px; font-size:18px; }
+    .f-input:focus { border-color: var(--gold); }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-create { flex: 1; background: var(--gold); color: #08090f; border: none; border-radius: 12px; padding: 15px; font-family: var(--body); font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+    .btn-create:active { opacity: 0.85; }
+    .btn-join   { flex: 1; background: transparent; color: var(--text); border: 1.5px solid var(--border); border-radius: 12px; padding: 15px; font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer; transition: border-color 0.15s; }
+    .btn-join:active   { border-color: var(--gold); }
+
+    .hint { font-size: 12px; color: var(--sub); text-align: center; margin-top: 16px; line-height: 1.5; }
+    .hint strong { color: var(--text); }
+
+    /* ── GM DASHBOARD ── */
+    #gm-screen { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .gm-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .gm-header-left { display: flex; align-items: center; gap: 14px; }
+    .gm-title { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--gold); }
+    .gm-room  { background: var(--blue-dim); border: 1px solid rgba(96,165,250,0.3); border-radius: 20px; padding: 3px 14px; font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--blue); letter-spacing: 2px; }
+
+    .gm-header-right { display: flex; align-items: center; gap: 12px; }
+    .live-pill  { display: flex; align-items: center; gap: 7px; background: var(--green-dim); border: 1px solid rgba(34,197,94,0.3); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--green); }
+    .live-dot   { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+    .player-count { font-size: 13px; color: var(--sub); }
+
+    .btn-leave { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; color: var(--sub); font-family: var(--body); font-size: 13px; cursor: pointer; }
+    .btn-leave:hover { border-color: var(--red); color: var(--red); }
+
+    /* Summary row */
+    .summary-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sum-item { flex-shrink: 0; text-align: center; }
+    .sum-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); }
+    .sum-val  { font-family: var(--mono); font-size: 17px; font-weight: 600; margin-top: 2px; }
+
+    /* Main grid */
+    .gm-content { flex: 1; padding: 20px 24px; overflow-y: auto; }
+
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    /* Player card */
+    .player-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .player-card.online  { border-color: rgba(34,197,94,0.3); }
+    .player-card.offline { opacity: 0.6; }
+
+    .pc-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--elevated);
+    }
+    .pc-name   { font-size: 16px; font-weight: 700; }
+    .pc-status { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .pc-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--sub); }
+    .pc-dot.on { background: var(--green); animation: pulse 1.5s infinite; }
+    .pc-dot.on + span { color: var(--green); }
+
+    .pc-meta {
+      padding: 10px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .pc-badge { background: var(--gold-dim); border: 1px solid rgba(245,166,35,0.3); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: var(--gold); }
+    .pc-edu   { font-size: 12px; color: var(--sub); }
+
+    /* Big cash row */
+    .pc-cash-row {
+      padding: 14px 16px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pc-cash-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); flex-shrink: 0; }
+    .pc-cash-val { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--gold); margin-left: auto; }
+
+    /* Fin row */
+    .pc-fin {
+      padding: 10px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pc-fin-item { text-align: center; padding: 8px 4px; border-radius: 8px; }
+    .pc-fin-item.inc { background: var(--green-dim); }
+    .pc-fin-item.exp { background: var(--red-dim); }
+    .pc-fin-item.bal { background: var(--elevated); }
+    .pc-fin-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin-bottom: 3px; }
+    .pc-fin-val { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+    .pc-fin-item.inc .pc-fin-val { color: var(--green); }
+    .pc-fin-item.exp .pc-fin-val { color: var(--red); }
+    .pc-fin-item.bal .pc-fin-val.pos { color: var(--green); }
+    .pc-fin-item.bal .pc-fin-val.neg { color: var(--red); }
+
+    /* Expand button */
+    .pc-expand { padding: 10px 16px; text-align: center; }
+    .btn-expand { background: transparent; border: none; color: var(--sub); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0 auto; }
+    .btn-expand:hover { color: var(--gold); }
+
+    /* Detail section */
+    .pc-detail { border-top: 1px solid var(--border); padding: 12px 16px; }
+    .detail-section { margin-bottom: 12px; }
+    .detail-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--sub); font-weight: 600; margin-bottom: 8px; }
+    .detail-row   { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .lft { color: var(--sub); font-size: 12px; }
+    .detail-row .rgt { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+    .detail-row .rgt.pos { color: var(--green); }
+    .detail-row .rgt.neg { color: var(--red); }
+
+    .flag-badge {
+      display: inline-block;
+      background: var(--red-dim);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px;
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--red);
+      margin-left: 8px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--sub);
+    }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-family: var(--display); font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .empty-sub   { font-size: 14px; line-height: 1.6; }
+    .room-code-big { font-family: var(--mono); font-size: 42px; font-weight: 700; color: var(--gold); letter-spacing: 8px; margin: 24px 0 8px; border: 2px dashed rgba(245,166,35,0.3); border-radius: 14px; padding: 16px 24px; display: inline-block; }
+
+    /* Alert banner */
+    .alert-banner {
+      background: var(--red-dim);
+      border-top: 1px solid rgba(239,68,68,0.3);
+      padding: 8px 24px;
+      font-size: 13px;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="logo">CashFlow</div>
+  <div class="logo-sub">Фінансова гра</div>
+  <div class="gm-badge">🎮 Ведучий · GM Panel</div>
+
+  <div class="login-card">
+    <h2>Підключитись до кімнати</h2>
+    <div class="f-group">
+      <label class="f-label">Код кімнати</label>
+      <input type="text" class="f-input" id="room-inp" placeholder="ABCD" maxlength="6"
+             autocomplete="off" autocapitalize="characters"
+             oninput="this.value=this.value.toUpperCase()">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-create" onclick="createRoom()">Створити нову</button>
+      <button class="btn-join"   onclick="joinRoom()">Підключитись</button>
+    </div>
+  </div>
+
+  <p class="hint">
+    <strong>Створити нову</strong> — генерує код та відкриває кімнату<br>
+    <strong>Підключитись</strong> — відкриває існуючу кімнату за кодом
+  </p>
+</div>
+
+
+<!-- ══ DASHBOARD ══ -->
+<div id="gm-screen" class="hidden">
+
+  <div class="gm-header">
+    <div class="gm-header-left">
+      <div class="gm-title">CashFlow GM</div>
+      <div class="gm-room" id="gm-room-badge">—</div>
+    </div>
+    <div class="gm-header-right">
+      <div class="live-pill"><div class="live-dot"></div><span>LIVE</span></div>
+      <div class="player-count" id="player-count">0 гравців</div>
+      <button class="btn-leave" onclick="leaveRoom()">← Вийти</button>
+    </div>
+  </div>
+
+  <!-- alert banner for anomalies -->
+  <div class="alert-banner hidden" id="alert-banner">
+    <span>⚠️</span><span id="alert-text"></span>
+  </div>
+
+  <!-- summary across all players -->
+  <div class="summary-bar" id="summary-bar"></div>
+
+  <div class="gm-content">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">⏳</div>
+      <div class="empty-title">Очікуємо гравців</div>
+      <p class="empty-sub">Дай гравцям цей код кімнати:</p>
+      <div class="room-code-big" id="big-room-code">—</div>
+      <p class="empty-sub">Вони вводять його при старті гри<br>і з'являться тут автоматично</p>
+    </div>
+
+    <div class="players-grid hidden" id="players-grid"></div>
+  </div>
+
+</div>
+
+<script>
+let _currentRoom = null;
+let _players = {};
+let _expanded = {};
+
+/* ── Room creation ── */
+function randomCode() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c='';
+  for(let i=0;i<4;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+async function createRoom() {
+  const inp = document.getElementById('room-inp');
+  const code = inp.value.trim() || randomCode();
+  inp.value = code.toUpperCase();
+  if (window._gmCreateRoom) {
+    const ok = await window._gmCreateRoom(code);
+    if (!ok) { alert('Помилка створення кімнати. Перевір Firebase конфіг.'); return; }
+  }
+  openDashboard(code);
+}
+
+function joinRoom() {
+  const code = document.getElementById('room-inp').value.trim();
+  if (code.length < 4) { alert('Введи код кімнати (4+ символи)'); return; }
+  openDashboard(code);
+}
+
+function openDashboard(code) {
+  _currentRoom = code.toUpperCase();
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('gm-screen').classList.remove('hidden');
+  document.getElementById('gm-room-badge').textContent = '#' + _currentRoom;
+  document.getElementById('big-room-code').textContent = _currentRoom;
+
+  // Save to sessionStorage so refresh keeps us in the room
+  sessionStorage.setItem('gm_room', _currentRoom);
+
+  if (window._gmConnect) window._gmConnect(_currentRoom);
+  else console.error('Firebase module not loaded');
+}
+
+function leaveRoom() {
+  _currentRoom = null; _players = {};
+  sessionStorage.removeItem('gm_room');
+  document.getElementById('gm-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('players-grid').classList.add('hidden');
+  document.getElementById('empty-state').classList.remove('hidden');
+}
+
+/* ── Firebase callback ── */
+window._gmOnUpdate = (data) => {
+  _players = data;
+  renderDashboard();
+};
+
+window._gmOnError = (msg) => {
+  showAlert('Firebase помилка: ' + msg);
+};
+
+/* ── Render dashboard ── */
+function renderDashboard() {
+  const entries = Object.entries(_players).filter(([k]) => !k.startsWith('_'));
+  const online  = entries.filter(([,p]) => p._online !== false);
+  const total   = entries.length;
+
+  document.getElementById('player-count').textContent = total + ' гравець' + (total === 1 ? '' : total < 5 ? 'ів' : 'ів');
+
+  // Toggle empty vs grid
+  const grid  = document.getElementById('players-grid');
+  const empty = document.getElementById('empty-state');
+  if (total === 0) { grid.classList.add('hidden'); empty.classList.remove('hidden'); }
+  else             { grid.classList.remove('hidden'); empty.classList.add('hidden'); }
+
+  // Summary bar
+  renderSummary(entries.map(([,p])=>p));
+
+  // Anomaly flags
+  checkAnomalies(entries.map(([,p])=>p));
+
+  // Player cards
+  grid.innerHTML = entries.map(([key, p]) => playerCard(key, p)).join('');
+}
+
+function renderSummary(players) {
+  if (!players.length) { document.getElementById('summary-bar').innerHTML=''; return; }
+  const totalCash = players.reduce((s,p)=>s+(p.cash||0),0);
+  const totalInc  = players.reduce((s,p)=>s+(p.totalIncome||0),0);
+  const totalExp  = players.reduce((s,p)=>s+(p.totalExpense||0),0);
+  const avgBal    = players.length ? (totalInc-totalExp)/players.length : 0;
+  const online    = players.filter(p=>p._online!==false).length;
+  document.getElementById('summary-bar').innerHTML = `
+    <div class="sum-item"><div class="sum-lbl">Гравців онлайн</div><div class="sum-val">${online} / ${players.length}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Загальна готівка</div><div class="sum-val gold mono">$${Math.abs(totalCash).toFixed(0)}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Заг. дохід / раунд</div><div class="sum-val green mono">$${totalInc.toFixed(0)}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Заг. витрати / раунд</div><div class="sum-val red mono">$${totalExp.toFixed(0)}</div></div>
+    <div class="sum-item"><div class="sum-lbl">Сер. сальдо</div><div class="sum-val ${avgBal>=0?'green':'red'} mono">${avgBal>=0?'+':'−'}$${Math.abs(avgBal).toFixed(0)}</div></div>
+  `;
+}
+
+function checkAnomalies(players) {
+  const flags = [];
+  players.forEach(p => {
+    if (p.cash < 0) flags.push(`${p.playerName}: готівка від'ємна ($${p.cash})`);
+    if ((p.loans?.bankRem||0) > 3000)  flags.push(`${p.playerName}: борг банку перевищує ліміт ($3,000)`);
+    if ((p.loans?.microRem||0) > 30000) flags.push(`${p.playerName}: мікрокредит перевищує ліміт ($30,000)`);
+    if ((p.exp?.kids||0) > 3) flags.push(`${p.playerName}: більше 3 дітей (${p.exp.kids})`);
+  });
+  const banner = document.getElementById('alert-banner');
+  if (flags.length) {
+    banner.classList.remove('hidden');
+    document.getElementById('alert-text').textContent = '⚠️ Увага: ' + flags.join(' · ');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function playerCard(key, p) {
+  const online  = p._online !== false;
+  const bal     = (p.balance || 0);
+  const balCls  = bal >= 0 ? 'pos' : 'neg';
+  const balSign = bal >= 0 ? '+' : '−';
+  const exp     = _expanded[key];
+
+  const eduIcon = p.education === 'university' ? '🎓'
+                : p.education === 'college'    ? '🔧' : '🚶';
+  const eduLabel = p.education === 'university' ? 'Університет'
+                 : p.education === 'college'    ? 'Технікум' : 'Без освіти';
+  const specLabel = p.specialtyName ? ` · ${p.specialtyName}` : '';
+
+  // Anomaly flags
+  let flags = '';
+  if (p.cash < 0) flags += '<span class="flag-badge">Борг!</span>';
+  if ((p.loans?.bankRem||0) > 3000)  flags += '<span class="flag-badge">Банк↑</span>';
+  if ((p.loans?.microRem||0) > 30000) flags += '<span class="flag-badge">МКО↑</span>';
+
+  // Detail section (expanded)
+  let detail = '';
+  if (exp) {
+    const inc  = p.incomes || [];
+    const crs  = p.courses || [];
+    const trn  = p.trainings || [];
+    const ex   = p.exp || {};
+    const loans= p.loans || {};
+    const typeLbl = {employee:'Найманий',self:'На себе',stipend:'Стипендія',passive:'Пасивний'};
+
+    detail = `<div class="pc-detail">
+      ${inc.length ? `<div class="detail-section">
+        <div class="detail-title">Доходи</div>
+        ${inc.map(i=>`<div class="detail-row"><span class="lft">${i.name} <span style="opacity:.5;font-size:11px">${typeLbl[i.type]||i.type}</span></span><span class="rgt pos">$${(i.basePay||0).toFixed(0)}</span></div>`).join('')}
+      </div>` : ''}
+
+      <div class="detail-section">
+        <div class="detail-title">Витрати</div>
+        <div class="detail-row"><span class="lft">${ex.housingLabel||'Житло'}</span><span class="rgt neg">$${hExpCalc(ex).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">Їжа</span><span class="rgt neg">$${(ex.food||0).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">Зв'язок</span><span class="rgt neg">$${(ex.comm||0).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">Транспорт</span><span class="rgt neg">$${(ex.transport||0).toFixed(0)}</span></div>
+        ${ex.hasWife?`<div class="detail-row"><span class="lft">💍 Дружина</span><span class="rgt neg">$${(ex.wifeAmt||0).toFixed(0)}</span></div>`:''}
+        ${ex.kids?`<div class="detail-row"><span class="lft">👶 Діти (${ex.kids})</span><span class="rgt neg">$${(ex.kids*50).toFixed(0)}</span></div>`:''}
+        ${(loans.bankRem>0)?`<div class="detail-row"><span class="lft">🏦 Банк (залишок $${loans.bankRem})</span><span class="rgt neg">$${(loans.bankRem*0.03).toFixed(0)}</span></div>`:''}
+        ${(loans.microRem>0)?`<div class="detail-row"><span class="lft">💸 Мікрокредит (залишок $${loans.microRem})</span><span class="rgt neg">$${(loans.microRem*0.30).toFixed(0)}</span></div>`:''}
+      </div>
+
+      ${crs.length ? `<div class="detail-section">
+        <div class="detail-title">Курси (${crs.length})</div>
+        ${crs.map(c=>`<div class="detail-row"><span class="lft">${c.name} · ${c.field}</span><span class="rgt gold">+$${(c.pay||0).toFixed(0)}</span></div>`).join('')}
+      </div>` : ''}
+
+      ${trn.length ? `<div class="detail-section">
+        <div class="detail-title">Тренінги (${trn.length})</div>
+        ${trn.map(t=>`<div class="detail-row"><span class="lft">${t.name}</span><span class="rgt gold">×${(t.mEmp||1).toFixed(2)} / ×${(t.mSelf||1).toFixed(2)} / ×${(t.mBiz||1).toFixed(2)}</span></div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }
+
+  return `<div class="player-card ${online?'online':'offline'}">
+    <div class="pc-header">
+      <div>
+        <span class="pc-name">${p.playerName || key}</span>
+        ${flags}
+      </div>
+      <div class="pc-status">
+        <div class="pc-dot ${online?'on':''}"></div>
+        <span>${online ? 'онлайн' : 'офлайн'}</span>
+      </div>
+    </div>
+    <div class="pc-meta">
+      <div class="pc-badge">Раунд ${p.round||1}</div>
+      <div class="pc-edu">${eduIcon} ${eduLabel}${specLabel}</div>
+    </div>
+    <div class="pc-cash-row">
+      <div class="pc-cash-lbl">Готівка</div>
+      <div class="pc-cash-val">$${Math.abs(p.cash||0).toFixed(0)}</div>
+    </div>
+    <div class="pc-fin">
+      <div class="pc-fin-item inc"><div class="pc-fin-lbl">Дохід</div><div class="pc-fin-val">$${(p.totalIncome||0).toFixed(0)}</div></div>
+      <div class="pc-fin-item exp"><div class="pc-fin-lbl">Витрати</div><div class="pc-fin-val">$${(p.totalExpense||0).toFixed(0)}</div></div>
+      <div class="pc-fin-item bal"><div class="pc-fin-lbl">Сальдо</div><div class="pc-fin-val ${balCls}">${balSign}$${Math.abs(bal).toFixed(0)}</div></div>
+    </div>
+    <div class="pc-expand">
+      <button class="btn-expand" onclick="toggleExpand('${key}')">
+        ${exp ? '▲ Сховати деталі' : '▼ Всі деталі'}
+      </button>
+    </div>
+    ${detail}
+  </div>`;
+}
+
+function hExpCalc(ex){
+  if(!ex)return 0;
+  const b=ex.housingBase||0;
+  return ex.housingType==='partner'?0:ex.housingType==='split'?b/2:b;
+}
+
+function toggleExpand(key){
+  _expanded[key]=!_expanded[key];
+  renderDashboard();
+}
+
+function showAlert(msg){
+  const b=document.getElementById('alert-banner');
+  b.classList.remove('hidden');
+  document.getElementById('alert-text').textContent=msg;
+}
+
+/* ── Init ── */
+function init(){
+  const saved=sessionStorage.getItem('gm_room');
+  if(saved){ document.getElementById('room-inp').value=saved; }
+}
+init();
+</script>
+</body>
+</html>
