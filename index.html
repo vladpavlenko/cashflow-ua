@@ -529,6 +529,21 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="m-debt">
+  <div class="modal">
+    <div class="modal-title">💸 Бракує коштів</div>
+    <div id="debt-info" style="font-family:var(--mono);font-size:13px;line-height:2;background:var(--elevated);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;color:var(--sub)"></div>
+    <div id="debt-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="m-bankrupt">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--red)">💀 Банкрутство</div>
+    <div id="bankrupt-info" style="font-family:var(--mono);font-size:13px;line-height:2;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;color:var(--sub)"></div>
+    <button class="btn-primary" style="background:var(--red);color:#fff" onclick="localStorage.clear();location.reload()">🔄 Почати нову гру</button>
+  </div>
+</div>
 
 <!-- ══ LOGIC ══ -->
 <script>
@@ -726,9 +741,115 @@ function openEndRound(){
   document.getElementById('er-new').textContent=fmt(nC);
   document.getElementById('er-new').className='mono '+(nC>=0?'green':'red');
   document.getElementById('er-badge').innerHTML=`Сальдо <strong style="color:${b>=0?'var(--green)':'var(--red)'}">${fmtS(b)}</strong> буде ${b>=0?'додано до':'знято з'} готівки`;
+  // Warning if new cash would be negative
+  let warn=document.getElementById('er-warn');
+  if(!warn){
+    warn=document.createElement('div');
+    warn.id='er-warn';
+    warn.style.cssText='font-size:12px;color:var(--gold);margin-top:6px';
+    document.getElementById('er-new').parentNode.appendChild(warn);
+  }
+  warn.textContent=nC<0?'⚠️ Готівки не вистачить — при підтвердженні з\'явиться вибір кредиту':'';
   openModal('m-end');
 }
-function confirmRound(){S.cash+=bal();S.round++;closeModal('m-end');save();fbSync();renderAll();}
+function finishRound(){
+  S.cash+=bal();S.round++;
+  closeModal('m-debt');closeModal('m-end');
+  save();fbSync();renderAll();
+}
+function confirmRound(){
+  if(S.cash+bal()<0){closeModal('m-end');openDebtModal();}
+  else{finishRound();}
+}
+function openDebtModal(){
+  const shortfall=Math.abs(S.cash+bal());
+  const bankAvail=3000-S.loans.bankRem;
+  const microAvail=30000-S.loans.microRem;
+  document.getElementById('debt-info').innerHTML=
+    `Готівка: <strong style="color:var(--text)">${fmt(S.cash)}</strong><br>`+
+    `Сальдо: <strong style="color:var(--red)">−${fmt(Math.abs(bal()))}</strong><br>`+
+    `Не вистачає: <strong style="color:var(--red)">${fmt(shortfall)}</strong>`;
+  renderDebtOptions(shortfall,bankAvail,microAvail);
+  openModal('m-debt');
+}
+function renderDebtOptions(shortfall,bankAvail,microAvail){
+  const box=document.getElementById('debt-options');
+  box.innerHTML='';
+  const noBank=bankAvail<=0, noMicro=microAvail<=0;
+  if(noBank&&noMicro){
+    box.innerHTML='<div style="color:var(--red);font-size:14px;font-weight:600;text-align:center;padding:8px 0">❌ Кредитні ліміти вичерпано</div>';
+    const b=document.createElement('button');
+    b.className='btn-primary';
+    b.style.cssText='background:var(--red);color:#fff;margin-top:4px';
+    b.textContent='Оголосити банкрутство';
+    b.onclick=showBankrupt;
+    box.appendChild(b);
+    return;
+  }
+  // Button A — Bank
+  if(bankAvail>0){
+    const amount=Math.min(shortfall,bankAvail);
+    const b=document.createElement('button');
+    b.className='btn-primary';
+    b.textContent=`🏦 Взяти в банку ${fmt(amount)} (залишок ліміту: ${fmt(bankAvail)})`;
+    b.onclick=()=>{
+      S.loans.bankRem+=amount; S.cash+=amount;
+      save();fbSync();
+      const newShortfall=S.cash+bal();
+      if(newShortfall>=0){finishRound();}
+      else{openDebtModal();}
+    };
+    box.appendChild(b);
+  }
+  // Button B — Micro
+  if(microAvail>0){
+    const amount=Math.min(shortfall,microAvail);
+    const b=document.createElement('button');
+    b.className='btn-primary';
+    b.style.cssText='background:var(--elevated);border:1px solid var(--border);color:var(--text)';
+    b.textContent=`💸 Взяти в мікрокредит ${fmt(amount)} (залишок ліміту: ${fmt(microAvail)})`;
+    b.onclick=()=>{
+      S.loans.microRem+=amount; S.cash+=amount;
+      save();fbSync();
+      if(S.loans.microRem>30000){showBankrupt();return;}
+      const newShortfall=S.cash+bal();
+      if(newShortfall>=0){finishRound();}
+      else{openDebtModal();}
+    };
+    box.appendChild(b);
+  }
+  // Button C — Both (only if neither alone covers shortfall)
+  if(bankAvail>0&&microAvail>0&&shortfall>bankAvail){
+    const bankPart=bankAvail;
+    const microPart=Math.min(shortfall-bankAvail,microAvail);
+    const b=document.createElement('button');
+    b.className='btn-primary';
+    b.style.cssText='background:var(--elevated);border:1px solid rgba(245,166,35,0.4);color:var(--gold)';
+    b.textContent=`🏦💸 Банк ${fmt(bankPart)} + Мікрокредит ${fmt(microPart)}`;
+    b.onclick=()=>{
+      S.loans.bankRem+=bankPart; S.cash+=bankPart;
+      S.loans.microRem+=microPart; S.cash+=microPart;
+      save();fbSync();
+      if(S.loans.microRem>30000){showBankrupt();return;}
+      const newShortfall=S.cash+bal();
+      if(newShortfall>=0){finishRound();}
+      else{openDebtModal();}
+    };
+    box.appendChild(b);
+  }
+}
+function showBankrupt(){
+  closeModal('m-debt');
+  const total=S.loans.bankRem+S.loans.microRem;
+  document.getElementById('bankrupt-info').innerHTML=
+    `${S.playerName} не зміг розрахуватись з боргами.<br><br>`+
+    `Готівка: <strong style="color:var(--text)">${fmt(S.cash)}</strong><br>`+
+    `Борг банку: <strong style="color:var(--text)">${fmt(S.loans.bankRem)}</strong><br>`+
+    `Мікрокредит: <strong style="color:var(--text)">${fmt(S.loans.microRem)}</strong><br>`+
+    `Загальний борг: <strong style="color:var(--red)">${fmt(total)}</strong><br><br>`+
+    `Раунд ${S.round} · Гра завершена`;
+  openModal('m-bankrupt');
+}
 function openModal(id){document.getElementById(id).classList.remove('hidden');}
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
 function overlayClose(e,id){if(e.target.classList.contains('modal-overlay'))closeModal(id);}
