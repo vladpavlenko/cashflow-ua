@@ -371,7 +371,7 @@
         <div class="edu-icon" id="ov-edu-icon">🎓</div>
         <div><div class="edu-text" id="ov-edu-text">—</div><div class="edu-sub" id="ov-edu-sub">—</div></div>
       </div>
-      <button class="btn-round hidden" id="study-action-btn"></button>
+      <div id="study-buttons-container" style="margin-bottom:12px"></div>
       <button class="btn-round" onclick="openEndRound()">Завершити раунд →</button>
     </div>
 
@@ -665,6 +665,33 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="m-start-study" onclick="overlayClose(event,'m-start-study')">
+  <div class="modal">
+    <div class="modal-title">Почати навчання</div>
+    <div class="card-label" style="margin-bottom:10px">Оберіть заклад</div>
+    <div class="choice-grid" style="margin-bottom:14px">
+      <div class="choice-btn" id="ss-btn-uni" onclick="ssPickType('university')">
+        <div class="icon">🎓</div>
+        <div class="lbl">Університет</div>
+        <div class="sub-lbl">8 раундів</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+      </div>
+      <div class="choice-btn" id="ss-btn-col" onclick="ssPickType('college')">
+        <div class="icon">🔧</div>
+        <div class="lbl">Технікум</div>
+        <div class="sub-lbl">4 раунди</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+      </div>
+    </div>
+    <div class="card-label" style="margin-bottom:8px" id="ss-spec-label">Спеціальність</div>
+    <div class="spec-list" id="ss-spec-list">
+      <div class="empty-msg">Спочатку оберіть заклад</div>
+    </div>
+    <button class="btn-primary" style="margin-top:16px" onclick="confirmStartStudy()">Розпочати навчання</button>
+    <button class="btn-cancel" onclick="closeModal('m-start-study')">Скасувати</button>
+  </div>
+</div>
+
 <!-- ══ LOGIC ══ -->
 <script>
 const UNI_SPECS=[
@@ -684,13 +711,16 @@ const COL_SPECS=[
 
 let S={
   playerName:'',roomCode:'',cash:500,round:1,
-  education:null,specialty:null,
-  studyRoundsTotal:0,studyRoundsLeft:0,studyCompleted:false,
+  educations:[],
   incomes:[],
   exp:{housingLabel:'Гуртожиток',housingBase:100,housingType:'self',food:30,comm:10,transport:20,hasWife:false,wifeAmt:0,kids:0},
   loans:{bankAmt:0,bankRem:0,microAmt:0,microRem:0},
   courses:[],trainings:[],tab:'ov',
 };
+
+function activeStudies(){return(S.educations||[]).filter(e=>!e.completed);}
+function completedStudies(){return(S.educations||[]).filter(e=>e.completed);}
+function stipendForEdu(edu){return S.incomes.find(i=>i.id===edu.stipendId);}
 
 let _setupEdu=null, _setupSpec=null, _fbActive=false;
 let _pendingShortfall=0, _balanceSnapshot=0;
@@ -734,21 +764,21 @@ function startGame(){
   if(!name){alert("Введіть ваше ім'я!");return;}
   if(!_setupEdu){alert('Оберіть тип освіти!');return;}
   if(_setupEdu!=='none'&&!_setupSpec){alert('Оберіть спеціальність!');return;}
-  S.playerName=name; S.roomCode=room; S.education=_setupEdu;
-  if(_setupEdu==='university'){
-    S.specialty=[...UNI_SPECS,...COL_SPECS].find(s=>s.id===_setupSpec);
+  S.playerName=name; S.roomCode=room;
+  S.educations=[];
+  if(_setupEdu!=='none'){
+    const allSpecs=[...UNI_SPECS,...COL_SPECS];
+    const spec=allSpecs.find(s=>s.id===_setupSpec);
+    const rounds=_setupEdu==='university'?8:4;
+    const stipId='stip_'+Date.now();
+    const edu={id:'edu_'+Date.now(),type:_setupEdu,specialty:spec,roundsTotal:rounds,roundsLeft:rounds,completed:false,stipendId:stipId};
+    S.educations.push(edu);
+    S.incomes.push({id:stipId,type:'stipend',name:'Стипендія · '+spec.name,basePay:30,field:'',condition:null,_protected:true});
+  }
+  if(S.educations.length>0){
     S.exp.housingLabel='Гуртожиток'; S.exp.housingBase=100; S.exp.food=30; S.exp.comm=10; S.exp.transport=20;
-    S.incomes.push({id:'stip0',type:'stipend',name:'Стипендія',basePay:30,field:''});
-    S.studyRoundsTotal=8; S.studyRoundsLeft=8; S.studyCompleted=false;
-  } else if(_setupEdu==='college'){
-    S.specialty=[...UNI_SPECS,...COL_SPECS].find(s=>s.id===_setupSpec);
-    S.exp.housingLabel='Гуртожиток'; S.exp.housingBase=100; S.exp.food=30; S.exp.comm=10; S.exp.transport=20;
-    S.incomes.push({id:'stip0',type:'stipend',name:'Стипендія',basePay:30,field:''});
-    S.studyRoundsTotal=4; S.studyRoundsLeft=4; S.studyCompleted=false;
   } else {
-    S.specialty=null;
     S.exp.housingLabel='Квартира'; S.exp.housingBase=200; S.exp.food=30; S.exp.comm=10; S.exp.transport=40;
-    S.studyRoundsTotal=0; S.studyRoundsLeft=0; S.studyCompleted=true;
   }
   if(room.length>=4&&window._fbInit){window._fbInit(room,name); _fbActive=true;}
   document.getElementById('setup-screen').classList.add('hidden');
@@ -791,19 +821,19 @@ function rOv(){
   document.getElementById('ov-bal').textContent=fmtS(b);
   document.getElementById('ov-bal-card').className='bal-card '+(b>=0?'pos':'neg');
   const ic=document.getElementById('ov-edu-icon'),tx=document.getElementById('ov-edu-text'),sb=document.getElementById('ov-edu-sub');
-  if(S.education==='university'){ic.textContent='🎓';tx.textContent='Студент університету';}
-  else if(S.education==='college'){ic.textContent='🔧';tx.textContent='Студент технікуму';}
-  else{ic.textContent='🚶';tx.textContent='Без освіти';}
-  if(S.education!=='none'&&!S.studyCompleted&&S.studyRoundsLeft>0){const done=S.studyRoundsTotal-S.studyRoundsLeft;sb.textContent=(S.specialty?.name??'—')+' · Раунд '+done+'/'+S.studyRoundsTotal;}
-  else if(S.studyCompleted&&S.education!=='none'){sb.textContent=(S.specialty?.name??'—')+' · ✅ Диплом';}
-  else if(S.education!=='none'){sb.textContent=(S.specialty?.name??'—');}
-  else{sb.textContent='Знімає квартиру';}
-  const studyBtn=document.getElementById('study-action-btn');
-  if(S.education!=='none'&&!S.studyCompleted){
-    studyBtn.classList.remove('hidden');
-    if(S.studyRoundsLeft>0){studyBtn.textContent='Закинути навчання (залишилось '+S.studyRoundsLeft+' раундів)';studyBtn.style.cssText='color:var(--red);border-color:rgba(239,68,68,0.5)';studyBtn.onclick=dropOutStudy;}
-    else{studyBtn.textContent='🎓 Отримати диплом';studyBtn.style.cssText='color:var(--green);border-color:rgba(34,197,94,0.5)';studyBtn.onclick=graduateStudy;}
-  } else {studyBtn.classList.add('hidden');}
+  const firstActive=activeStudies()[0];
+  const firstCompleted=completedStudies()[0];
+  const displayEdu=firstActive||firstCompleted;
+  if(displayEdu){
+    ic.textContent=displayEdu.type==='university'?'🎓':'🔧';
+    tx.textContent=(displayEdu.type==='university'?'Університет':'Технікум')+' · '+(displayEdu.specialty?.name??'—');
+    if(!displayEdu.completed&&displayEdu.roundsLeft>0){const done=displayEdu.roundsTotal-displayEdu.roundsLeft;sb.textContent='Раунд '+done+'/'+displayEdu.roundsTotal;}
+    else if(displayEdu.completed){sb.textContent='✅ Диплом отримано';}
+    else{sb.textContent='Навчання завершено — отримай диплом';}
+  } else {
+    ic.textContent='🚶';tx.textContent='Без освіти';sb.textContent='Навчання не розпочато';
+  }
+  renderStudyButtons();
 }
 function rInc(){
   const el=document.getElementById('inc-rows');
@@ -814,7 +844,8 @@ function rInc(){
     let sub=lb[inc.type]||inc.type;
     if(inc.type==='passive'&&inc.condition){sub+=' · Умова: '+inc.condition.label;}
     else if(inc.type!=='passive'&&inc.field){sub+=' · '+inc.field;}
-    return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div><div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-r sub">×${mx.toFixed(2)}</div><div class="col-final">$${f.toFixed(0)}</div><button class="btn-del" onclick="delIncome('${inc.id}')">✕</button></div>`;
+    const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
+    return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div><div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-r sub">×${mx.toFixed(2)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
   }).join('');
   document.getElementById('inc-total').textContent=fmt(totalInc());
 }
@@ -985,16 +1016,88 @@ function onConditionTypeChange(val){
   document.getElementById('mi-condition-edu-block').classList.toggle('hidden',val!=='edu');
   document.getElementById('mi-condition-exp-block').classList.toggle('hidden',val!=='exp');
 }
-function dropOutStudy(){
-  if(!confirm('Закинути навчання? Стипендія зникне, диплому не буде.'))return;
-  S.studyRoundsLeft=0;S.studyCompleted=true;S.education='none';S.specialty=null;
-  removeStipend();save();fbSync();renderAll();
-}
-function graduateStudy(){
-  S.studyCompleted=true;S.studyRoundsLeft=0;
-  removeStipend();
-  alert('🎓 Вітаємо! '+(S.playerName||'')+' отримав диплом: '+(S.specialty?.name??''));
+function dropOutStudy(eduId){
+  const edu=(S.educations||[]).find(e=>e.id===eduId);
+  if(!edu)return;
+  if(!confirm('Закинути навчання "'+( edu.specialty?.name??'')+'"?\nСтипендія зникне. Диплому не буде.'))return;
+  S.incomes=S.incomes.filter(i=>i.id!==edu.stipendId);
+  S.educations=S.educations.filter(e=>e.id!==eduId);
+  if(activeStudies().length===0){S.exp.housingLabel='Квартира';S.exp.housingBase=200;S.exp.transport=40;}
   save();fbSync();renderAll();
+}
+function graduateStudy(eduId){
+  const edu=(S.educations||[]).find(e=>e.id===eduId);
+  if(!edu)return;
+  edu.completed=true;edu.roundsLeft=0;
+  S.incomes=S.incomes.filter(i=>i.id!==edu.stipendId);
+  if(activeStudies().length===0){S.exp.housingLabel='Квартира';S.exp.housingBase=200;S.exp.transport=40;}
+  alert('🎓 Вітаємо! Диплом "'+( edu.specialty?.name??'')+'" отримано!');
+  save();fbSync();renderAll();
+}
+function renderStudyButtons(){
+  const container=document.getElementById('study-buttons-container');
+  if(!container)return;
+  const active=activeStudies();
+  const canAddMore=active.length<2;
+  let html='';
+  if(active.length===0){
+    html=`<button class="btn-round" onclick="openStartStudyModal()" style="color:var(--gold);border-color:rgba(245,166,35,0.4)">📚 Почати навчання</button>`;
+  } else {
+    html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    active.forEach(edu=>{
+      const label=edu.roundsLeft>0?`Закинути: ${edu.specialty?.name??''} (${edu.roundsLeft} р.)`:`🎓 Диплом: ${edu.specialty?.name??''}`;
+      const color=edu.roundsLeft>0?'color:var(--red);border-color:rgba(239,68,68,0.4)':'color:var(--green);border-color:rgba(34,197,94,0.4)';
+      const fn=edu.roundsLeft>0?`dropOutStudy('${edu.id}')`:`graduateStudy('${edu.id}')`;
+      html+=`<button class="btn-round" onclick="${fn}" style="font-size:12px;${color}">${label}</button>`;
+    });
+    if(canAddMore){html+=`<button class="btn-round" onclick="openStartStudyModal()" style="font-size:12px;color:var(--gold);border-color:rgba(245,166,35,0.4)">📚 Почати навчання</button>`;}
+    html+='</div>';
+  }
+  const completed=completedStudies();
+  if(completed.length>0){
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+    completed.forEach(edu=>{html+=`<div style="background:var(--green-dim);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--green)">✅ ${edu.specialty?.name??edu.type}</div>`;});
+    html+='</div>';
+  }
+  container.innerHTML=html;
+}
+let _ssType=null,_ssSpec=null;
+function openStartStudyModal(){
+  if(activeStudies().length>=2){alert('Максимум 2 активних навчання одночасно.');return;}
+  _ssType=null;_ssSpec=null;
+  ['ss-btn-uni','ss-btn-col'].forEach(id=>document.getElementById(id)?.classList.remove('sel'));
+  document.getElementById('ss-spec-list').innerHTML='<div class="empty-msg">Спочатку оберіть заклад</div>';
+  openModal('m-start-study');
+}
+function ssPickType(type){
+  _ssType=type;_ssSpec=null;
+  document.getElementById('ss-btn-uni').classList.toggle('sel',type==='university');
+  document.getElementById('ss-btn-col').classList.toggle('sel',type==='college');
+  const specs=type==='university'?UNI_SPECS:COL_SPECS;
+  document.getElementById('ss-spec-label').textContent=type==='university'?'Спеціальність (університет)':'Спеціальність (технікум)';
+  document.getElementById('ss-spec-list').innerHTML=specs.map(s=>`<div class="spec-item" id="ss-si-${s.id}" onclick="ssPickSpec('${s.id}')"><span>${s.icon}</span><span>${s.name}</span></div>`).join('');
+}
+function ssPickSpec(id){
+  _ssSpec=id;
+  document.querySelectorAll('#ss-spec-list .spec-item').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('ss-si-'+id)?.classList.add('sel');
+}
+function confirmStartStudy(){
+  if(!_ssType){alert('Оберіть заклад!');return;}
+  if(!_ssSpec){alert('Оберіть спеціальність!');return;}
+  const allSpecs=[...UNI_SPECS,...COL_SPECS];
+  const spec=allSpecs.find(s=>s.id===_ssSpec);
+  const alreadyStudying=(S.educations||[]).some(e=>!e.completed&&e.specialty?.id===_ssSpec);
+  if(alreadyStudying){alert('Ця спеціальність вже є в активному навчанні.');return;}
+  const rounds=_ssType==='university'?8:4;
+  const stipId='stip_'+Date.now();
+  const eduId='edu_'+Date.now();
+  const edu={id:eduId,type:_ssType,specialty:spec,roundsTotal:rounds,roundsLeft:rounds,completed:false,stipendId:stipId};
+  S.educations=S.educations||[];
+  S.educations.push(edu);
+  S.incomes.push({id:stipId,type:'stipend',name:'Стипендія · '+spec.name,basePay:30,field:'',condition:null,_protected:true});
+  if(S.exp.housingLabel==='Квартира'||S.exp.housingBase===200){S.exp.housingLabel='Гуртожиток';S.exp.housingBase=100;S.exp.transport=20;}
+  closeModal('m-start-study');save();fbSync();renderAll();
 }
 function saveIncome(){
   const n=document.getElementById('mi-name').value.trim();
@@ -1012,7 +1115,11 @@ function saveIncome(){
   }
   S.incomes.push(inc);closeModal('m-inc');save();fbSync();renderAll();
 }
-function delIncome(id){S.incomes=S.incomes.filter(i=>i.id!==id);save();fbSync();renderAll();}
+function delIncome(id){
+  const income=S.incomes.find(i=>i.id===id);
+  if(income&&income._protected){alert('Стипендія прив\'язана до активного навчання і не може бути видалена вручну.\nЗакинь або завершити навчання щоб прибрати стипендію.');return;}
+  S.incomes=S.incomes.filter(i=>i.id!==id);save();fbSync();renderAll();
+}
 function saveCourse(){const n=document.getElementById('mc-name').value.trim();if(!n){alert('Введіть назву!');return;}S.courses.push({id:'c'+Date.now(),name:n,field:document.getElementById('mc-field').value.trim(),pay:parseFloat(document.getElementById('mc-pay').value)||0});closeModal('m-crs');save();fbSync();renderAll();}
 function delCourse(id){S.courses=S.courses.filter(c=>c.id!==id);save();fbSync();renderAll();}
 function saveTraining(){const n=document.getElementById('mt-name').value.trim();if(!n){alert('Введіть назву!');return;}S.trainings.push({id:'t'+Date.now(),name:n,mEmp:parseFloat(document.getElementById('mt-emp').value)||1,mSelf:parseFloat(document.getElementById('mt-self').value)||1,mBiz:parseFloat(document.getElementById('mt-biz').value)||1});closeModal('m-trn');save();fbSync();renderAll();}
@@ -1038,11 +1145,10 @@ function openEndRound(){
   warn.textContent=nC<0?'⚠️ Готівки не вистачить — при підтвердженні з\'явиться вибір кредиту':'';
   openModal('m-end');
 }
-function removeStipend(){S.incomes=S.incomes.filter(i=>i.type!=='stipend');}
 function finishRound(){
   S.cash+=_balanceSnapshot;S.round++;
   _pendingShortfall=0;_balanceSnapshot=0;
-  if(S.studyRoundsLeft>0){S.studyRoundsLeft--;if(S.studyRoundsLeft===0)removeStipend();}
+  (S.educations||[]).forEach(edu=>{if(!edu.completed&&edu.roundsLeft>0)edu.roundsLeft--;});
   closeModal('m-debt');closeModal('m-end');
   save();fbSync();renderAll();
 }
@@ -1164,7 +1270,7 @@ function fbSync(){
   _fbTimer=setTimeout(()=>{
     window._fbSync({
       playerName:S.playerName, roomCode:S.roomCode, cash:S.cash, round:S.round,
-      education:S.education, specialtyName:S.specialty?.name??null,
+      educations:S.educations,
       totalIncome:totalInc(), totalExpense:totalExp(), balance:bal(),
       incomes:S.incomes, courses:S.courses, trainings:S.trainings,
       exp:S.exp, loans:S.loans,
@@ -1174,7 +1280,28 @@ function fbSync(){
 
 /* ── Local storage ── */
 function save(){try{localStorage.setItem('cf_state',JSON.stringify(S));}catch(e){}}
-function load(){try{const d=localStorage.getItem('cf_state');if(d){Object.assign(S,JSON.parse(d));return true;}}catch(e){}return false;}
+function load(){
+  try{
+    const d=localStorage.getItem('cf_state');
+    if(d){
+      Object.assign(S,JSON.parse(d));
+      // Міграція: старий формат → новий
+      if(S.education!==undefined&&!S.educations){
+        S.educations=[];
+        if(S.education&&S.education!=='none'&&S.specialty){
+          const rounds=S.education==='university'?8:4;
+          const stipEntry=S.incomes?.find(i=>i.type==='stipend');
+          const stipId=stipEntry?stipEntry.id:'stip_migrated';
+          S.educations.push({id:'edu_migrated',type:S.education,specialty:S.specialty,roundsTotal:rounds,roundsLeft:S.studyRoundsLeft??rounds,completed:S.studyCompleted??false,stipendId:stipId});
+          if(stipEntry)stipEntry._protected=true;
+        }
+        delete S.education;delete S.specialty;delete S.studyRoundsTotal;delete S.studyRoundsLeft;delete S.studyCompleted;
+      }
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 
 function init(){
   if(load()&&S.playerName){
