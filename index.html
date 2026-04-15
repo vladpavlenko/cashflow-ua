@@ -484,7 +484,7 @@
 
     <!-- COURSES -->
     <div class="tab-pane hidden" id="pane-crs">
-      <div class="sec-hdr"><div class="sec-title">Курси</div><button class="btn-add" onclick="openModal('m-crs')">+ Додати</button></div>
+      <div class="sec-hdr"><div class="sec-title">Курси</div><button class="btn-add" onclick="openAddCourseModal()">+ Додати</button></div>
       <div class="info-badge">Курс збільшує <strong>Додаткову оплату</strong> у доходах де сфера збігається.</div>
       <div class="gen-tbl">
         <div class="crs-head gen-head"><div>Назва</div><div>Сфера</div><div style="text-align:right">+Дохід</div><div></div></div>
@@ -494,7 +494,7 @@
 
     <!-- TRAININGS -->
     <div class="tab-pane hidden" id="pane-trn">
-      <div class="sec-hdr"><div class="sec-title">Тренінги</div><button class="btn-add" onclick="openModal('m-trn')">+ Додати</button></div>
+      <div class="sec-hdr"><div class="sec-title">Тренінги</div><button class="btn-add" onclick="openAddTrainingModal()">+ Додати</button></div>
       <div class="info-badge">Тренінг збільшує <strong>Множник</strong> для відповідного типу доходу.</div>
       <div class="gen-tbl">
         <div class="trn-head gen-head"><div>Назва</div><div style="text-align:right">Найм.</div><div style="text-align:right">На себе</div><div style="text-align:right">Бізнес</div><div></div></div>
@@ -1119,6 +1119,19 @@ function delIncome(id){
   const income=S.incomes.find(i=>i.id===id);
   if(income&&income._protected){alert('Стипендія прив\'язана до активного навчання і не може бути видалена вручну.\nЗакинь або завершити навчання щоб прибрати стипендію.');return;}
   S.incomes=S.incomes.filter(i=>i.id!==id);save();fbSync();renderAll();
+}
+function openAddCourseModal(){
+  document.getElementById('mc-name').value='';
+  document.getElementById('mc-field').value='';
+  document.getElementById('mc-pay').value='';
+  openModal('m-crs');
+}
+function openAddTrainingModal(){
+  document.getElementById('mt-name').value='';
+  document.getElementById('mt-emp').value='';
+  document.getElementById('mt-self').value='';
+  document.getElementById('mt-biz').value='';
+  openModal('m-trn');
 }
 function saveCourse(){const n=document.getElementById('mc-name').value.trim();if(!n){alert('Введіть назву!');return;}S.courses.push({id:'c'+Date.now(),name:n,field:document.getElementById('mc-field').value.trim(),pay:parseFloat(document.getElementById('mc-pay').value)||0});closeModal('m-crs');save();fbSync();renderAll();}
 function delCourse(id){S.courses=S.courses.filter(c=>c.id!==id);save();fbSync();renderAll();}
