@@ -233,6 +233,12 @@
     .loan-input:focus { border-color: var(--gold); }
     .loan-footer { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
     .loan-pay-lbl { font-size:12px; color:var(--sub); } .loan-pay-val { font-family:var(--mono); font-size:16px; font-weight:600; color:var(--red); }
+    .loan-stat-row { display:flex; justify-content:space-between; align-items:center; padding:9px 16px; border-bottom:1px solid var(--border); font-size:13px; }
+    .loan-stat-row.highlight { background:var(--elevated); }
+    .loan-stat-lbl { color:var(--sub); }
+    .loan-stat-val { font-weight:600; }
+    .btn-borrow { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(245,166,35,0.4); border-radius:10px; padding:8px 16px; font-family:var(--body); font-size:13px; font-weight:600; cursor:pointer; }
+    .btn-borrow:disabled { opacity:0.3; cursor:not-allowed; }
 
     /* Courses / Trainings */
     .gen-tbl { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:12px; }
@@ -425,22 +431,44 @@
           <div><div class="loan-name">🏦 Банк</div><div class="loan-rate">3% річних · 1 рік = 1 раунд</div></div>
           <div class="loan-max">Ліміт: $3,000</div>
         </div>
-        <div class="loan-fields">
-          <div class="loan-field"><label>Сума позики</label><input type="number" class="loan-input" id="bank-amt" max="3000" min="0" placeholder="0" onchange="calcLoan('bank')"></div>
-          <div class="loan-field"><label>Залишок боргу</label><input type="number" class="loan-input" id="bank-rem" max="3000" min="0" placeholder="0" onchange="calcLoan('bank')"></div>
+        <div class="loan-stat-row">
+          <span class="loan-stat-lbl">Сума позик</span>
+          <span class="loan-stat-val mono" id="bank-amt-display">$0</span>
         </div>
-        <div class="loan-footer"><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="bank-pay">$0</div></div>
+        <div class="loan-stat-row">
+          <span class="loan-stat-lbl">Залишок боргу</span>
+          <span class="loan-stat-val mono red" id="bank-rem-display">$0</span>
+        </div>
+        <div class="loan-stat-row highlight">
+          <span class="loan-stat-lbl">Доступний ліміт</span>
+          <span class="loan-stat-val mono green" id="bank-avail-display">$3,000</span>
+        </div>
+        <div class="loan-footer">
+          <div><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="bank-pay">$0</div></div>
+          <button class="btn-borrow" id="bank-borrow-btn" onclick="openBorrowModal('bank')">+ Взяти позику</button>
+        </div>
       </div>
       <div class="loan-card">
         <div class="loan-hdr">
           <div><div class="loan-name">💸 Мікрокредит</div><div class="loan-rate">30% річних · 1 рік = 1 раунд</div></div>
           <div class="loan-max">Ліміт: $30,000</div>
         </div>
-        <div class="loan-fields">
-          <div class="loan-field"><label>Сума позики</label><input type="number" class="loan-input" id="micro-amt" max="30000" min="0" placeholder="0" onchange="calcLoan('micro')"></div>
-          <div class="loan-field"><label>Залишок боргу</label><input type="number" class="loan-input" id="micro-rem" max="30000" min="0" placeholder="0" onchange="calcLoan('micro')"></div>
+        <div class="loan-stat-row">
+          <span class="loan-stat-lbl">Сума позик</span>
+          <span class="loan-stat-val mono" id="micro-amt-display">$0</span>
         </div>
-        <div class="loan-footer"><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="micro-pay">$0</div></div>
+        <div class="loan-stat-row">
+          <span class="loan-stat-lbl">Залишок боргу</span>
+          <span class="loan-stat-val mono red" id="micro-rem-display">$0</span>
+        </div>
+        <div class="loan-stat-row highlight">
+          <span class="loan-stat-lbl">Доступний ліміт</span>
+          <span class="loan-stat-val mono green" id="micro-avail-display">$30,000</span>
+        </div>
+        <div class="loan-footer">
+          <div><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="micro-pay">$0</div></div>
+          <button class="btn-borrow" id="micro-borrow-btn" onclick="openBorrowModal('micro')">+ Взяти позику</button>
+        </div>
       </div>
       <div class="fin-tbl"><div class="total-row"><div class="total-lbl">Усього витрат</div><div class="total-val red" id="exp-grand">$0</div></div></div>
     </div>
@@ -538,6 +566,23 @@
     <div class="modal-title">💸 Бракує коштів</div>
     <div id="debt-info" style="font-family:var(--mono);font-size:13px;line-height:2;background:var(--elevated);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;color:var(--sub)"></div>
     <div id="debt-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="m-borrow" onclick="overlayClose(event,'m-borrow')">
+  <div class="modal">
+    <div class="modal-title" id="borrow-title">Взяти позику</div>
+    <div class="info-badge" id="borrow-info">—</div>
+    <div class="f-field">
+      <label class="f-label">Сума позики ($)</label>
+      <input type="number" class="f-input" id="borrow-amount" placeholder="0" min="1" oninput="onBorrowInput(this.value)">
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0 12px;font-size:13px">
+      <span class="sub">Виплата відсотків за раунд:</span>
+      <span class="mono gold" id="borrow-interest-preview">$0</span>
+    </div>
+    <button class="btn-primary" id="borrow-confirm-btn" onclick="confirmBorrow()">Взяти позику</button>
+    <button class="btn-cancel" onclick="closeModal('m-borrow')">Скасувати</button>
   </div>
 </div>
 
@@ -696,8 +741,18 @@ function rExp(){
   document.getElementById('wife-inp').value=S.exp.wifeAmt||0;
   document.getElementById('kids-val').textContent=S.exp.kids;
   document.getElementById('family-total').textContent=fmt((S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0)+S.exp.kids*50);
-  document.getElementById('bank-pay').textContent=fmt((parseFloat(S.loans.bankRem)||0)*0.03);
-  document.getElementById('micro-pay').textContent=fmt((parseFloat(S.loans.microRem)||0)*0.30);
+  const bankAvail=3000-(S.loans.bankRem||0);
+  document.getElementById('bank-amt-display').textContent='$'+(S.loans.bankAmt||0).toFixed(0);
+  document.getElementById('bank-rem-display').textContent='$'+(S.loans.bankRem||0).toFixed(0);
+  document.getElementById('bank-avail-display').textContent='$'+Math.max(0,bankAvail).toFixed(0);
+  document.getElementById('bank-pay').textContent='$'+((S.loans.bankRem||0)*0.03).toFixed(2);
+  document.getElementById('bank-borrow-btn').disabled=bankAvail<=0;
+  const microAvail=30000-(S.loans.microRem||0);
+  document.getElementById('micro-amt-display').textContent='$'+(S.loans.microAmt||0).toFixed(0);
+  document.getElementById('micro-rem-display').textContent='$'+(S.loans.microRem||0).toFixed(0);
+  document.getElementById('micro-avail-display').textContent='$'+Math.max(0,microAvail).toFixed(0);
+  document.getElementById('micro-pay').textContent='$'+((S.loans.microRem||0)*0.30).toFixed(2);
+  document.getElementById('micro-borrow-btn').disabled=microAvail<=0;
   document.getElementById('exp-grand').textContent=fmt(totalExp());
 }
 function rCrs(){
@@ -725,10 +780,42 @@ function setHType(t){S.exp.housingType=t;save();fbSync();rExp();renderBar();}
 function toggleWife(v){S.exp.hasWife=v;if(!v)S.exp.wifeAmt=0;save();fbSync();rExp();renderBar();}
 function setWifeExp(v){S.exp.wifeAmt=parseFloat(v)||0;save();fbSync();rExp();renderBar();}
 function stepKids(d){S.exp.kids=Math.max(0,Math.min(3,S.exp.kids+d));save();fbSync();rExp();renderBar();}
-function calcLoan(type){
-  if(type==='bank'){S.loans.bankAmt=parseFloat(document.getElementById('bank-amt').value)||0;S.loans.bankRem=Math.min(parseFloat(document.getElementById('bank-rem').value)||0,3000);document.getElementById('bank-rem').value=S.loans.bankRem||'';}
-  else{S.loans.microAmt=parseFloat(document.getElementById('micro-amt').value)||0;S.loans.microRem=Math.min(parseFloat(document.getElementById('micro-rem').value)||0,30000);document.getElementById('micro-rem').value=S.loans.microRem||'';}
-  save();fbSync();rExp();renderBar();
+let _borrowSource=null;
+function openBorrowModal(source){
+  _borrowSource=source;
+  const isBank=source==='bank';
+  const limit=isBank?3000:30000;
+  const rem=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
+  const avail=limit-rem;
+  const rate=isBank?0.03:0.30;
+  const name=isBank?'🏦 Банк':'💸 Мікрокредит';
+  document.getElementById('borrow-title').textContent='Позика · '+name;
+  document.getElementById('borrow-info').innerHTML=`Доступний ліміт: <strong>$${avail.toFixed(0)}</strong> · Ставка: <strong>${(rate*100).toFixed(0)}% / раунд</strong>`;
+  document.getElementById('borrow-amount').value='';
+  document.getElementById('borrow-amount').max=avail;
+  document.getElementById('borrow-interest-preview').textContent='$0';
+  const btn=document.getElementById('borrow-confirm-btn');
+  if(avail<=0){btn.disabled=true;btn.textContent='Ліміт вичерпано';}
+  else{btn.disabled=false;btn.textContent='Взяти позику';}
+  openModal('m-borrow');
+}
+function onBorrowInput(val){
+  const isBank=_borrowSource==='bank';
+  const rate=isBank?0.03:0.30;
+  const amount=parseFloat(val)||0;
+  document.getElementById('borrow-interest-preview').textContent='$'+(amount*rate).toFixed(2)+' / раунд';
+}
+function confirmBorrow(){
+  const isBank=_borrowSource==='bank';
+  const limit=isBank?3000:30000;
+  const rem=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
+  const avail=limit-rem;
+  const amount=Math.min(parseFloat(document.getElementById('borrow-amount').value)||0,avail);
+  if(amount<=0){alert('Введіть суму позики');return;}
+  if(isBank){S.loans.bankAmt=(S.loans.bankAmt||0)+amount;S.loans.bankRem=(S.loans.bankRem||0)+amount;}
+  else{S.loans.microAmt=(S.loans.microAmt||0)+amount;S.loans.microRem=(S.loans.microRem||0)+amount;}
+  S.cash+=amount;
+  closeModal('m-borrow');save();fbSync();renderAll();
 }
 function saveIncome(){const n=document.getElementById('mi-name').value.trim();if(!n){alert('Введіть назву!');return;}S.incomes.push({id:'i'+Date.now(),type:document.getElementById('mi-type').value,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim()});closeModal('m-inc');save();fbSync();renderAll();}
 function delIncome(id){S.incomes=S.incomes.filter(i=>i.id!==id);save();fbSync();renderAll();}
@@ -805,6 +892,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     b.className='btn-primary';
     b.textContent=`🏦 Взяти в банку ${fmt(amount)} (залишок ліміту: ${fmt(bankAvail)})`;
     b.onclick=()=>{
+      S.loans.bankAmt=(S.loans.bankAmt||0)+amount;
       S.loans.bankRem+=amount; S.cash+=amount;
       _pendingShortfall-=amount;
       save();fbSync();
@@ -821,6 +909,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     b.style.cssText='background:var(--elevated);border:1px solid var(--border);color:var(--text)';
     b.textContent=`💸 Взяти в мікрокредит ${fmt(amount)} (залишок ліміту: ${fmt(microAvail)})`;
     b.onclick=()=>{
+      S.loans.microAmt=(S.loans.microAmt||0)+amount;
       S.loans.microRem+=amount; S.cash+=amount;
       _pendingShortfall-=amount;
       save();fbSync();
@@ -839,7 +928,9 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     b.style.cssText='background:var(--elevated);border:1px solid rgba(245,166,35,0.4);color:var(--gold)';
     b.textContent=`🏦💸 Банк ${fmt(bankPart)} + Мікрокредит ${fmt(microPart)}`;
     b.onclick=()=>{
+      S.loans.bankAmt=(S.loans.bankAmt||0)+bankPart;
       S.loans.bankRem+=bankPart; S.cash+=bankPart;
+      S.loans.microAmt=(S.loans.microAmt||0)+microPart;
       S.loans.microRem+=microPart; S.cash+=microPart;
       _pendingShortfall-=(bankPart+microPart);
       save();fbSync();
@@ -894,10 +985,6 @@ function init(){
     if(S.roomCode&&window._fbInit){window._fbInit(S.roomCode,S.playerName);_fbActive=true;}
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('main-screen').classList.remove('hidden');
-    document.getElementById('bank-amt').value=S.loans.bankAmt||'';
-    document.getElementById('bank-rem').value=S.loans.bankRem||'';
-    document.getElementById('micro-amt').value=S.loans.microAmt||'';
-    document.getElementById('micro-rem').value=S.loans.microRem||'';
     renderAll();
   }
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
