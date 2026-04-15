@@ -1040,7 +1040,7 @@ function renderStudyButtons(){
   const container=document.getElementById('study-buttons-container');
   if(!container)return;
   const active=activeStudies();
-  const canAddMore=active.length<2;
+  const canAddMore=activeIncomeCount()<2;
   let html='';
   if(active.length===0){
     html=`<button class="btn-round" onclick="openStartStudyModal()" style="color:var(--gold);border-color:rgba(245,166,35,0.4)">📚 Почати навчання</button>`;
@@ -1065,7 +1065,7 @@ function renderStudyButtons(){
 }
 let _ssType=null,_ssSpec=null;
 function openStartStudyModal(){
-  if(activeStudies().length>=2){alert('Максимум 2 активних навчання одночасно.');return;}
+  if(activeIncomeCount()>=2){alert('Немає вільного слоту для активного доходу.\nСпочатку звільни місце (видали дохід або отримай/закинь навчання).');return;}
   _ssType=null;_ssSpec=null;
   ['ss-btn-uni','ss-btn-col'].forEach(id=>document.getElementById(id)?.classList.remove('sel'));
   document.getElementById('ss-spec-list').innerHTML='<div class="empty-msg">Спочатку оберіть заклад</div>';
@@ -1087,6 +1087,7 @@ function ssPickSpec(id){
 function confirmStartStudy(){
   if(!_ssType){alert('Оберіть заклад!');return;}
   if(!_ssSpec){alert('Оберіть спеціальність!');return;}
+  if(activeIncomeCount()>=2){alert('Немає вільного слоту для активного доходу.');return;}
   const allSpecs=[...UNI_SPECS,...COL_SPECS];
   const spec=allSpecs.find(s=>s.id===_ssSpec);
   const alreadyStudying=(S.educations||[]).some(e=>!e.completed&&e.specialty?.id===_ssSpec);
