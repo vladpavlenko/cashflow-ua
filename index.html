@@ -329,6 +329,10 @@
       </div>
     </div>
     <div class="hdr-right">
+      <button onclick="resetGame()" title="Скинути гру"
+        style="background:none;border:none;color:var(--sub);font-size:18px;cursor:pointer;padding:4px;margin-bottom:4px;"
+        onmouseover="this.style.color='var(--red)'"
+        onmouseout="this.style.color='var(--sub)'">🔄</button>
       <div class="cash-label">Готівка</div>
       <div class="cash-value" id="hdr-cash">$500</div>
     </div>
@@ -572,6 +576,7 @@ let S={
 };
 
 let _setupEdu=null, _setupSpec=null, _fbActive=false;
+let _pendingShortfall=0, _balanceSnapshot=0;
 
 function onRoomInput(v) {
   const el=document.getElementById('sync-badge');
@@ -753,21 +758,28 @@ function openEndRound(){
   openModal('m-end');
 }
 function finishRound(){
-  S.cash+=bal();S.round++;
+  S.cash+=_balanceSnapshot;S.round++;
+  _pendingShortfall=0;_balanceSnapshot=0;
   closeModal('m-debt');closeModal('m-end');
   save();fbSync();renderAll();
 }
 function confirmRound(){
-  if(S.cash+bal()<0){closeModal('m-end');openDebtModal();}
-  else{finishRound();}
+  _balanceSnapshot=bal();
+  const projected=S.cash+_balanceSnapshot;
+  if(projected<0){
+    _pendingShortfall=Math.abs(projected);
+    closeModal('m-end');openDebtModal();
+  } else {
+    finishRound();
+  }
 }
 function openDebtModal(){
-  const shortfall=Math.abs(S.cash+bal());
+  const shortfall=_pendingShortfall;
   const bankAvail=3000-S.loans.bankRem;
   const microAvail=30000-S.loans.microRem;
   document.getElementById('debt-info').innerHTML=
     `Готівка: <strong style="color:var(--text)">${fmt(S.cash)}</strong><br>`+
-    `Сальдо: <strong style="color:var(--red)">−${fmt(Math.abs(bal()))}</strong><br>`+
+    `Сальдо: <strong style="color:var(--red)">−${fmt(Math.abs(_balanceSnapshot))}</strong><br>`+
     `Не вистачає: <strong style="color:var(--red)">${fmt(shortfall)}</strong>`;
   renderDebtOptions(shortfall,bankAvail,microAvail);
   openModal('m-debt');
@@ -794,9 +806,9 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     b.textContent=`🏦 Взяти в банку ${fmt(amount)} (залишок ліміту: ${fmt(bankAvail)})`;
     b.onclick=()=>{
       S.loans.bankRem+=amount; S.cash+=amount;
+      _pendingShortfall-=amount;
       save();fbSync();
-      const newShortfall=S.cash+bal();
-      if(newShortfall>=0){finishRound();}
+      if(_pendingShortfall<=0){_pendingShortfall=0;finishRound();}
       else{openDebtModal();}
     };
     box.appendChild(b);
@@ -810,10 +822,10 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     b.textContent=`💸 Взяти в мікрокредит ${fmt(amount)} (залишок ліміту: ${fmt(microAvail)})`;
     b.onclick=()=>{
       S.loans.microRem+=amount; S.cash+=amount;
+      _pendingShortfall-=amount;
       save();fbSync();
       if(S.loans.microRem>30000){showBankrupt();return;}
-      const newShortfall=S.cash+bal();
-      if(newShortfall>=0){finishRound();}
+      if(_pendingShortfall<=0){_pendingShortfall=0;finishRound();}
       else{openDebtModal();}
     };
     box.appendChild(b);
@@ -829,14 +841,17 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     b.onclick=()=>{
       S.loans.bankRem+=bankPart; S.cash+=bankPart;
       S.loans.microRem+=microPart; S.cash+=microPart;
+      _pendingShortfall-=(bankPart+microPart);
       save();fbSync();
       if(S.loans.microRem>30000){showBankrupt();return;}
-      const newShortfall=S.cash+bal();
-      if(newShortfall>=0){finishRound();}
+      if(_pendingShortfall<=0){_pendingShortfall=0;finishRound();}
       else{openDebtModal();}
     };
     box.appendChild(b);
   }
+}
+function resetGame(){
+  if(confirm('Скинути гру? Всі дані будуть видалені.')){localStorage.clear();location.reload();}
 }
 function showBankrupt(){
   closeModal('m-debt');
