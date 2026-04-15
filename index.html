@@ -239,6 +239,8 @@
     .loan-stat-val { font-weight:600; }
     .btn-borrow { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(245,166,35,0.4); border-radius:10px; padding:8px 16px; font-family:var(--body); font-size:13px; font-weight:600; cursor:pointer; }
     .btn-borrow:disabled { opacity:0.3; cursor:not-allowed; }
+    .btn-repay { background:var(--green-dim); color:var(--green); border:1px solid rgba(34,197,94,0.3); border-radius:10px; padding:8px 16px; font-family:var(--body); font-size:13px; font-weight:600; cursor:pointer; }
+    .btn-repay:disabled { opacity:0.3; cursor:not-allowed; }
 
     /* Courses / Trainings */
     .gen-tbl { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:12px; }
@@ -445,7 +447,10 @@
         </div>
         <div class="loan-footer">
           <div><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="bank-pay">$0</div></div>
-          <button class="btn-borrow" id="bank-borrow-btn" onclick="openBorrowModal('bank')">+ Взяти позику</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-repay" id="bank-repay-btn" onclick="openRepayModal('bank')">↓ Виплатити</button>
+            <button class="btn-borrow" id="bank-borrow-btn" onclick="openBorrowModal('bank')">+ Взяти позику</button>
+          </div>
         </div>
       </div>
       <div class="loan-card">
@@ -467,7 +472,10 @@
         </div>
         <div class="loan-footer">
           <div><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="micro-pay">$0</div></div>
-          <button class="btn-borrow" id="micro-borrow-btn" onclick="openBorrowModal('micro')">+ Взяти позику</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-repay" id="micro-repay-btn" onclick="openRepayModal('micro')">↓ Виплатити</button>
+            <button class="btn-borrow" id="micro-borrow-btn" onclick="openBorrowModal('micro')">+ Взяти позику</button>
+          </div>
         </div>
       </div>
       <div class="fin-tbl"><div class="total-row"><div class="total-lbl">Усього витрат</div><div class="total-val red" id="exp-grand">$0</div></div></div>
@@ -583,6 +591,33 @@
     </div>
     <button class="btn-primary" id="borrow-confirm-btn" onclick="confirmBorrow()">Взяти позику</button>
     <button class="btn-cancel" onclick="closeModal('m-borrow')">Скасувати</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="m-repay" onclick="overlayClose(event,'m-repay')">
+  <div class="modal">
+    <div class="modal-title" id="repay-title">Погасити борг</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px">
+        <span class="sub">Поточний борг:</span>
+        <span class="mono red" id="repay-current-debt">$0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px">
+        <span class="sub">Ваша готівка:</span>
+        <span class="mono gold" id="repay-cash-available">$0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px">
+        <span class="sub">Відсотки після погашення:</span>
+        <span class="mono green" id="repay-interest-after">$0</span>
+      </div>
+    </div>
+    <div class="f-field">
+      <label class="f-label">Сума погашення ($)</label>
+      <input type="number" class="f-input" id="repay-amount" placeholder="0" min="1" oninput="onRepayInput(this.value)">
+    </div>
+    <div id="repay-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:8px 12px;background:var(--red-dim);border-radius:8px"></div>
+    <button class="btn-primary" id="repay-confirm-btn" onclick="confirmRepay()">Погасити</button>
+    <button class="btn-cancel" onclick="closeModal('m-repay')">Скасувати</button>
   </div>
 </div>
 
@@ -747,12 +782,14 @@ function rExp(){
   document.getElementById('bank-avail-display').textContent='$'+Math.max(0,bankAvail).toFixed(0);
   document.getElementById('bank-pay').textContent='$'+((S.loans.bankRem||0)*0.03).toFixed(2);
   document.getElementById('bank-borrow-btn').disabled=bankAvail<=0;
+  document.getElementById('bank-repay-btn').disabled=(S.loans.bankRem||0)<=0;
   const microAvail=30000-(S.loans.microRem||0);
   document.getElementById('micro-amt-display').textContent='$'+(S.loans.microAmt||0).toFixed(0);
   document.getElementById('micro-rem-display').textContent='$'+(S.loans.microRem||0).toFixed(0);
   document.getElementById('micro-avail-display').textContent='$'+Math.max(0,microAvail).toFixed(0);
   document.getElementById('micro-pay').textContent='$'+((S.loans.microRem||0)*0.30).toFixed(2);
   document.getElementById('micro-borrow-btn').disabled=microAvail<=0;
+  document.getElementById('micro-repay-btn').disabled=(S.loans.microRem||0)<=0;
   document.getElementById('exp-grand').textContent=fmt(totalExp());
 }
 function rCrs(){
@@ -816,6 +853,48 @@ function confirmBorrow(){
   else{S.loans.microAmt=(S.loans.microAmt||0)+amount;S.loans.microRem=(S.loans.microRem||0)+amount;}
   S.cash+=amount;
   closeModal('m-borrow');save();fbSync();renderAll();
+}
+let _repaySource=null;
+function openRepayModal(source){
+  _repaySource=source;
+  const isBank=source==='bank';
+  const debt=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
+  const rate=isBank?0.03:0.30;
+  const name=isBank?'🏦 Банк':'💸 Мікрокредит';
+  document.getElementById('repay-title').textContent='Погасити · '+name;
+  document.getElementById('repay-current-debt').textContent='$'+debt.toFixed(0);
+  document.getElementById('repay-cash-available').textContent='$'+(S.cash||0).toFixed(0);
+  document.getElementById('repay-interest-after').textContent='$'+(debt*rate).toFixed(2);
+  document.getElementById('repay-amount').value='';
+  document.getElementById('repay-error').style.display='none';
+  const btn=document.getElementById('repay-confirm-btn');
+  if(debt<=0){btn.disabled=true;btn.textContent='Борг відсутній';}
+  else{btn.disabled=false;btn.textContent='Погасити';}
+  openModal('m-repay');
+}
+function onRepayInput(val){
+  const isBank=_repaySource==='bank';
+  const debt=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
+  const rate=isBank?0.03:0.30;
+  const amount=parseFloat(val)||0;
+  const actualRepay=Math.min(amount,debt);
+  const debtAfter=debt-actualRepay;
+  document.getElementById('repay-interest-after').textContent='$'+(debtAfter*rate).toFixed(2);
+  document.getElementById('repay-error').style.display='none';
+}
+function confirmRepay(){
+  const isBank=_repaySource==='bank';
+  const debt=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
+  const cash=S.cash||0;
+  const entered=parseFloat(document.getElementById('repay-amount').value)||0;
+  const errEl=document.getElementById('repay-error');
+  if(entered>cash){errEl.textContent='❌ Недостатньо готівки. Доступно: $'+cash.toFixed(0);errEl.style.display='block';return;}
+  if(entered<=0){errEl.textContent='❌ Введіть суму для погашення';errEl.style.display='block';return;}
+  const actualRepay=Math.min(entered,debt);
+  S.cash-=actualRepay;
+  if(isBank){S.loans.bankRem=Math.max(0,debt-actualRepay);if(S.loans.bankRem===0)S.loans.bankAmt=0;}
+  else{S.loans.microRem=Math.max(0,debt-actualRepay);if(S.loans.microRem===0)S.loans.microAmt=0;}
+  closeModal('m-repay');save();fbSync();renderAll();
 }
 function saveIncome(){const n=document.getElementById('mi-name').value.trim();if(!n){alert('Введіть назву!');return;}S.incomes.push({id:'i'+Date.now(),type:document.getElementById('mi-type').value,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim()});closeModal('m-inc');save();fbSync();renderAll();}
 function delIncome(id){S.incomes=S.incomes.filter(i=>i.id!==id);save();fbSync();renderAll();}
