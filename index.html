@@ -379,7 +379,7 @@
     <div class="tab-pane hidden" id="pane-inc">
       <div class="sec-hdr"><div class="sec-title">Доходи</div><button class="btn-add" onclick="openAddIncomeModal()">+ Додати</button></div>
       <div class="fin-tbl">
-        <div class="inc-head"><div>Назва / Тип</div><div class="col-r">База</div><div class="col-r">Дод.</div><div class="col-r">Кратн.</div><div class="col-r">Підсум.</div><div></div></div>
+        <div class="inc-head"><div>Назва / Тип</div><div class="col-r">База</div><div class="col-r">Кратн.</div><div class="col-r">Дод.</div><div class="col-r">Підсум.</div><div></div></div>
         <div id="inc-rows"></div>
         <div class="total-row"><div class="total-lbl">Усього доходів</div><div class="total-val green" id="inc-total">$0</div></div>
       </div>
@@ -721,6 +721,7 @@ let S={
 function activeStudies(){return(S.educations||[]).filter(e=>!e.completed);}
 function completedStudies(){return(S.educations||[]).filter(e=>e.completed);}
 function stipendForEdu(edu){return S.incomes.find(i=>i.id===edu.stipendId);}
+function activeIncomeCount(){return S.incomes.filter(i=>i.type==='employee'||i.type==='self'||i.type==='stipend').length;}
 
 let _setupEdu=null, _setupSpec=null, _fbActive=false;
 let _pendingShortfall=0, _balanceSnapshot=0;
@@ -788,8 +789,8 @@ function startGame(){
 
 /* ── Calc ── */
 function addPay(inc){ if(!inc.field)return 0; return S.courses.filter(c=>c.field.trim().toLowerCase()===inc.field.trim().toLowerCase()).reduce((s,c)=>s+(parseFloat(c.pay)||0),0); }
-function mult(inc){ return S.trainings.reduce((m,t)=>{ const v=inc.type==='employee'?t.mEmp:inc.type==='self'?t.mSelf:inc.type==='passive'?t.mBiz:1; return m*(parseFloat(v)||1); },1); }
-function fi(inc){ return ((parseFloat(inc.basePay)||0)+addPay(inc))*mult(inc); }
+function mult(inc){ const bonusSum=S.trainings.reduce((sum,t)=>{ const v=inc.type==='employee'?t.mEmp:inc.type==='self'?t.mSelf:inc.type==='passive'?t.mBiz:1; return sum+((parseFloat(v)||1)-1); },0); return 1+bonusSum; }
+function fi(inc){ const base=parseFloat(inc.basePay)||0; return (base*mult(inc))+addPay(inc); }
 function totalInc(){ return S.incomes.reduce((s,i)=>s+fi(i),0); }
 function hExp(){ const b=S.exp.housingBase; return S.exp.housingType==='partner'?0:S.exp.housingType==='split'?b/2:b; }
 function totalExp(){ return hExp()+S.exp.food+S.exp.comm+S.exp.transport+(S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0)+S.exp.kids*50+(parseFloat(S.loans.bankRem)||0)*0.03+(parseFloat(S.loans.microRem)||0)*0.30; }
@@ -845,7 +846,7 @@ function rInc(){
     if(inc.type==='passive'&&inc.condition){sub+=' · Умова: '+inc.condition.label;}
     else if(inc.type!=='passive'&&inc.field){sub+=' · '+inc.field;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
-    return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div><div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-r sub">×${mx.toFixed(2)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
+    return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div><div class="col-r sub">×${mx.toFixed(2)}</div><div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
   }).join('');
   document.getElementById('inc-total').textContent=fmt(totalInc());
 }
@@ -985,9 +986,7 @@ function confirmRepay(){
   closeModal('m-repay');save();fbSync();renderAll();
 }
 function openAddIncomeModal(){
-  const hasStipend=S.incomes.some(i=>i.type==='stipend');
-  const activeCount=S.incomes.filter(i=>i.type==='employee'||i.type==='self').length;
-  const canAddActive=!hasStipend||activeCount===0;
+  const limitReached=activeIncomeCount()>=2;
   document.getElementById('mi-name').value='';
   document.getElementById('mi-base').value='';
   document.getElementById('mi-field').value='';
@@ -997,10 +996,13 @@ function openAddIncomeModal(){
   document.getElementById('mi-field-block').classList.remove('hidden');
   document.getElementById('mi-condition-block').classList.add('hidden');
   const sel=document.getElementById('mi-type');
-  Array.from(sel.options).forEach(opt=>{if(opt.value==='employee'||opt.value==='self')opt.disabled=!canAddActive;});
-  if(!canAddActive){sel.value='passive';}else{sel.value='employee';}
+  Array.from(sel.options).forEach(opt=>{if(opt.value==='employee'||opt.value==='self')opt.disabled=limitReached;});
+  if(limitReached){sel.value='passive';}else{sel.value='employee';}
   const hint=document.getElementById('mi-active-hint');
-  if(hint)hint.classList.toggle('hidden',canAddActive);
+  if(hint){
+    hint.classList.toggle('hidden',!limitReached);
+    if(limitReached)hint.textContent='⚠️ Досягнуто ліміт активних доходів (2). Можна додати лише пасивний.';
+  }
   onIncomeTypeChange(sel.value);
   openModal('m-inc');
 }
@@ -1103,9 +1105,7 @@ function saveIncome(){
   const n=document.getElementById('mi-name').value.trim();
   if(!n){alert('Введіть назву!');return;}
   const type=document.getElementById('mi-type').value;
-  const hasStipend=S.incomes.some(i=>i.type==='stipend');
-  const activeCount=S.incomes.filter(i=>i.type==='employee'||i.type==='self').length;
-  if(hasStipend&&(type==='employee'||type==='self')&&activeCount>=1){alert('Під час навчання можна мати лише один активний дохід.');return;}
+  if((type==='employee'||type==='self')&&activeIncomeCount()>=2){alert('Досягнуто ліміт: максимум 2 активних доходи (Найманий / На себе / Стипендія).');return;}
   const inc={id:'i'+Date.now(),type,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim(),condition:null};
   if(type==='passive'){
     inc.field='';
