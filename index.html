@@ -378,11 +378,8 @@
     <!-- INCOME -->
     <div class="tab-pane hidden" id="pane-inc">
       <div class="sec-hdr"><div class="sec-title">Доходи</div><button class="btn-add" onclick="openAddIncomeModal()">+ Додати</button></div>
-      <div class="fin-tbl">
-        <div class="inc-head"><div>Назва / Тип</div><div class="col-r">База</div><div class="col-r">Кратн.</div><div class="col-r">Дод.</div><div class="col-r">Підсум.</div><div></div></div>
-        <div id="inc-rows"></div>
-        <div class="total-row"><div class="total-lbl">Усього доходів</div><div class="total-val green" id="inc-total">$0</div></div>
-      </div>
+      <div id="inc-wrap"></div>
+      <div class="total-row"><div class="total-lbl">Усього доходів</div><div class="total-val green" id="inc-total">$0</div></div>
     </div>
 
     <!-- EXPENSES -->
@@ -837,17 +834,22 @@ function rOv(){
   renderStudyButtons();
 }
 function rInc(){
-  const el=document.getElementById('inc-rows');
-  if(!S.incomes.length){el.innerHTML='<div class="empty-msg">Доходів поки немає</div>';return;}
-  const lb={employee:'Найманий',self:'На себе',stipend:'Стипендія',passive:'Пасивний'};
-  el.innerHTML=S.incomes.map(inc=>{
+  const wrap=document.getElementById('inc-wrap');
+  if(!S.incomes.length){wrap.innerHTML='<div class="fin-tbl"><div class="empty-msg">Доходів поки немає</div></div>';document.getElementById('inc-total').textContent=fmt(0);return;}
+  const head='<div class="inc-head"><div>Назва / Тип</div><div class="col-r">База</div><div class="col-r">Кратн.</div><div class="col-r">Дод.</div><div class="col-r">Підсум.</div><div></div></div>';
+  function buildRow(inc){
     const ap=addPay(inc),mx=mult(inc),f=fi(inc);
-    let sub=lb[inc.type]||inc.type;
+    let sub=inc.type==='employee'||inc.type==='self'?'Активний':inc.type==='stipend'?'Стипендія':'Пасивний';
     if(inc.type==='passive'&&inc.condition){sub+=' · Умова: '+inc.condition.label;}
     else if(inc.type!=='passive'&&inc.field){sub+=' · '+inc.field;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
     return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div><div class="col-r sub">×${mx.toFixed(2)}</div><div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
-  }).join('');
+  }
+  const active=S.incomes.filter(i=>i.type==='employee'||i.type==='self'||i.type==='stipend');
+  const passive=S.incomes.filter(i=>i.type==='passive');
+  let html=`<div class="fin-tbl">${head}${active.length?active.map(buildRow).join(''):'<div class="empty-msg" style="font-size:12px;padding:12px">Активних доходів немає</div>'}</div>`;
+  if(passive.length){html+=`<div class="fin-tbl" style="margin-top:10px">${passive.map(buildRow).join('')}</div>`;}
+  wrap.innerHTML=html;
   document.getElementById('inc-total').textContent=fmt(totalInc());
 }
 function rExp(){
