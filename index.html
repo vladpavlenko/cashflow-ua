@@ -216,9 +216,14 @@
     .housing-block { padding: 12px 14px; border-bottom: 1px solid var(--border); }
     .housing-top   { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .housing-name  { font-size: 14px; font-weight: 500; } .housing-base { font-size: 11px; color: var(--sub); margin-top: 2px; }
-    .htype-row { display: flex; gap: 6px; }
-    .htype-btn { flex: 1; padding: 7px 4px; background: var(--elevated); border: 1.5px solid var(--border); border-radius: 8px; color: var(--sub); font-size: 11px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; }
-    .htype-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .exp-input-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .exp-input-row:last-child { border-bottom: none; }
+    .exp-input-lbl { font-size: 13px; font-weight: 500; color: var(--text); }
+    .exp-input-wrap { display: flex; align-items: center; background: var(--elevated); border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; width: 100px; flex-shrink: 0; }
+    .exp-input-wrap:focus-within { border-color: var(--gold); }
+    .exp-input-prefix { padding: 0 6px 0 10px; font-family: var(--mono); font-size: 13px; color: var(--sub); flex-shrink: 0; }
+    .exp-input-field { background: transparent; border: none; outline: none; color: var(--text); font-family: var(--mono); font-size: 14px; font-weight: 600; width: 100%; padding: 8px 8px 8px 0; -moz-appearance: textfield; }
+    .exp-input-field::-webkit-outer-spin-button, .exp-input-field::-webkit-inner-spin-button { -webkit-appearance: none; }
     .tog-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); }
     .tog-lbl { font-size: 14px; font-weight: 500; } .tog-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
     .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
@@ -398,39 +403,49 @@
       <div class="sec-hdr"><div class="sec-title">Витрати</div></div>
       <div class="fin-tbl">
         <div class="exp-head"><div>Стаття</div><div style="text-align:right">Сума</div></div>
-        <div class="housing-block">
-          <div class="housing-top">
-            <div><div class="housing-name" id="exp-h-lbl">Гуртожиток</div><div class="housing-base" id="exp-h-base">Базова: $100</div></div>
-            <div class="col-final red-val" id="exp-h-val">$100</div>
-          </div>
-          <div class="htype-row">
-            <div class="htype-btn active" id="ht-self"    onclick="setHType('self')">Я плачу</div>
-            <div class="htype-btn"        id="ht-partner" onclick="setHType('partner')">Вона платить</div>
-            <div class="htype-btn"        id="ht-split"   onclick="setHType('split')">Навпіл</div>
-          </div>
+        <div class="exp-input-row">
+          <div class="exp-input-lbl" id="exp-h-lbl">Гуртожиток</div>
+          <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-h-inp" min="0" oninput="setExpField('housingBase', this.value)"></div>
         </div>
-        <div class="exp-row"><div class="row-name">🍕 Їжа</div><div class="col-final red-val" id="exp-food">$0</div></div>
-        <div class="exp-row"><div class="row-name">📱 Зв'язок</div><div class="col-final red-val" id="exp-comm">$0</div></div>
-        <div class="exp-row"><div class="row-name">🚌 Транспорт</div><div class="col-final red-val" id="exp-tran">$0</div></div>
+        <div class="exp-input-row">
+          <div class="exp-input-lbl">🍕 Їжа</div>
+          <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-food-inp" min="0" oninput="setExpField('food', this.value)"></div>
+        </div>
+        <div class="exp-input-row">
+          <div class="exp-input-lbl">📱 Зв'язок</div>
+          <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-comm-inp" min="0" oninput="setExpField('comm', this.value)"></div>
+        </div>
+        <div class="exp-input-row">
+          <div class="exp-input-lbl">🚌 Транспорт</div>
+          <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-tran-inp" min="0" oninput="setExpField('transport', this.value)"></div>
+        </div>
         <div class="total-row"><div class="total-lbl">Базові витрати</div><div class="total-val red" id="basic-total">$0</div></div>
       </div>
 
       <div class="sec-hdr" style="margin-top:4px"><div class="sec-title">Сім'я</div></div>
       <div class="fin-tbl">
         <div class="tog-row">
-          <div><div class="tog-lbl">💍 Дружина</div><div class="tog-sub" id="wife-sub">не одружений</div></div>
+          <div style="display:flex;align-items:center;gap:10px;flex:1">
+            <div class="tog-lbl">💍 Партнер</div>
+            <div class="exp-input-wrap hidden" id="wife-inp-wrap" style="width:80px">
+              <span class="exp-input-prefix">$</span>
+              <input type="number" class="exp-input-field" id="wife-inp" min="0" oninput="setWifeExp(this.value)">
+            </div>
+          </div>
           <label class="toggle"><input type="checkbox" id="wife-tog" onchange="toggleWife(this.checked)"><span class="tog-slider"></span></label>
         </div>
-        <div class="exp-row hidden" id="wife-exp-row" style="border-bottom:1px solid var(--border)">
-          <div class="row-name">Витрати на дружину ($)</div>
-          <input type="number" class="loan-input" id="wife-inp" style="width:80px;text-align:right" value="0" min="0" onchange="setWifeExp(this.value)">
-        </div>
         <div class="tog-row" style="border-bottom:none">
-          <div><div class="tog-lbl">👶 Діти</div><div class="tog-sub">$50 за дитину · макс. 3</div></div>
-          <div class="counter-wrap">
-            <button class="counter-btn" onclick="stepKids(-1)">−</button>
-            <span class="counter-val" id="kids-val">0</span>
-            <button class="counter-btn" onclick="stepKids(1)">+</button>
+          <div>
+            <div class="tog-lbl">👶 Діти</div>
+            <div class="tog-sub">макс. 3 · витрати на дитину:</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="exp-input-wrap" style="width:72px"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-kid-cost-inp" min="0" oninput="setExpField('kidCost', this.value)"></div>
+            <div class="counter-wrap">
+              <button class="counter-btn" onclick="stepKids(-1)">−</button>
+              <span class="counter-val" id="kids-val">0</span>
+              <button class="counter-btn" onclick="stepKids(1)">+</button>
+            </div>
           </div>
         </div>
         <div class="total-row"><div class="total-lbl">Витрати сім'ї</div><div class="total-val red" id="family-total">$0</div></div>
@@ -736,7 +751,7 @@ let S={
   playerName:'',roomCode:'',cash:500,round:1,
   educations:[],
   incomes:[],
-  exp:{housingLabel:'Гуртожиток',housingBase:100,housingType:'self',food:30,comm:10,transport:20,hasWife:false,wifeAmt:0,kids:0},
+  exp:{housingLabel:'Гуртожиток',housingBase:0,housingType:'self',food:0,comm:0,transport:0,hasWife:false,wifeAmt:0,kids:0,kidCost:0},
   loans:{bankAmt:0,bankRem:0,microAmt:0,microRem:0},
   courses:[],trainings:[],tab:'ov',
 };
@@ -816,8 +831,8 @@ function mult(inc){ const bonusSum=S.trainings.reduce((sum,t)=>{ const v=inc.typ
 function fi(inc){ const base=parseFloat(inc.basePay)||0; return (base*mult(inc))+addPay(inc); }
 function totalInc(){ return S.incomes.reduce((s,i)=>s+fi(i),0); }
 function totalPassiveInc(){ return S.incomes.filter(i=>i.type==='passive').reduce((s,i)=>s+fi(i),0); }
-function hExp(){ const b=S.exp.housingBase; return S.exp.housingType==='partner'?0:S.exp.housingType==='split'?b/2:b; }
-function totalExp(){ return hExp()+S.exp.food+S.exp.comm+S.exp.transport+(S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0)+S.exp.kids*50+(parseFloat(S.loans.bankRem)||0)*0.03+(parseFloat(S.loans.microRem)||0)*0.30; }
+function hExp(){ return parseFloat(S.exp.housingBase)||0; }
+function totalExp(){ return hExp()+(parseFloat(S.exp.food)||0)+(parseFloat(S.exp.comm)||0)+(parseFloat(S.exp.transport)||0)+(S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0)+S.exp.kids*(parseFloat(S.exp.kidCost)||0)+(parseFloat(S.loans.bankRem)||0)*0.03+(parseFloat(S.loans.microRem)||0)*0.30; }
 function bal(){ return totalInc()-totalExp(); }
 function fmt(n){ return '$'+Math.abs(n).toFixed(0); }
 function fmtS(n){ return (n>=0?'+':'−')+fmt(n); }
@@ -933,34 +948,29 @@ function rInc(){
 }
 function rExp(){
   document.getElementById('exp-h-lbl').textContent=S.exp.housingLabel;
-  document.getElementById('exp-h-base').textContent='Базова: $'+S.exp.housingBase;
-  document.getElementById('exp-h-val').textContent=fmt(hExp());
-  ['self','partner','split'].forEach(t=>document.getElementById('ht-'+t).classList.toggle('active',t===S.exp.housingType));
-  document.getElementById('exp-food').textContent=fmt(S.exp.food);
-  document.getElementById('exp-comm').textContent=fmt(S.exp.comm);
-  document.getElementById('exp-tran').textContent=fmt(S.exp.transport);
-  document.getElementById('basic-total').textContent=fmt(hExp()+S.exp.food+S.exp.comm+S.exp.transport);
+  const sync=(id,val)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=parseFloat(val)>=0?parseFloat(val):0;};
+  sync('exp-h-inp',S.exp.housingBase);
+  sync('exp-food-inp',S.exp.food);
+  sync('exp-comm-inp',S.exp.comm);
+  sync('exp-tran-inp',S.exp.transport);
+  sync('exp-kid-cost-inp',S.exp.kidCost!==undefined?S.exp.kidCost:0);
   document.getElementById('wife-tog').checked=S.exp.hasWife;
-  document.getElementById('wife-sub').textContent=S.exp.hasWife?'+$'+(S.exp.wifeAmt||0)+'/раунд':'не одружений';
-  document.getElementById('wife-exp-row').classList.toggle('hidden',!S.exp.hasWife);
-  document.getElementById('wife-inp').value=S.exp.wifeAmt||0;
+  document.getElementById('wife-inp-wrap').classList.toggle('hidden',!S.exp.hasWife);
+  if(S.exp.hasWife)sync('wife-inp',S.exp.wifeAmt);
   document.getElementById('kids-val').textContent=S.exp.kids;
-  document.getElementById('family-total').textContent=fmt((S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0)+S.exp.kids*50);
   const bankAvail=3000-(S.loans.bankRem||0);
+  const microAvail=30000-(S.loans.microRem||0);
   document.getElementById('bank-amt-display').textContent='$'+(S.loans.bankAmt||0).toFixed(0);
   document.getElementById('bank-rem-display').textContent='$'+(S.loans.bankRem||0).toFixed(0);
   document.getElementById('bank-avail-display').textContent='$'+Math.max(0,bankAvail).toFixed(0);
-  document.getElementById('bank-pay').textContent='$'+((S.loans.bankRem||0)*0.03).toFixed(2);
-  document.getElementById('bank-borrow-btn').disabled=bankAvail<=0;
-  document.getElementById('bank-repay-btn').disabled=(S.loans.bankRem||0)<=0;
-  const microAvail=30000-(S.loans.microRem||0);
   document.getElementById('micro-amt-display').textContent='$'+(S.loans.microAmt||0).toFixed(0);
   document.getElementById('micro-rem-display').textContent='$'+(S.loans.microRem||0).toFixed(0);
   document.getElementById('micro-avail-display').textContent='$'+Math.max(0,microAvail).toFixed(0);
-  document.getElementById('micro-pay').textContent='$'+((S.loans.microRem||0)*0.30).toFixed(2);
+  document.getElementById('bank-borrow-btn').disabled=bankAvail<=0;
   document.getElementById('micro-borrow-btn').disabled=microAvail<=0;
+  document.getElementById('bank-repay-btn').disabled=(S.loans.bankRem||0)<=0;
   document.getElementById('micro-repay-btn').disabled=(S.loans.microRem||0)<=0;
-  document.getElementById('exp-grand').textContent=fmt(totalExp());
+  updateExpTotals();
 }
 function rCrs(){
   const el=document.getElementById('crs-rows');
@@ -983,10 +993,20 @@ function setTab(id){
 }
 
 /* ── Actions ── */
-function setHType(t){S.exp.housingType=t;save();fbSync();rExp();renderBar();}
-function toggleWife(v){S.exp.hasWife=v;if(!v)S.exp.wifeAmt=0;save();fbSync();rExp();renderBar();}
-function setWifeExp(v){S.exp.wifeAmt=parseFloat(v)||0;save();fbSync();rExp();renderBar();}
-function stepKids(d){S.exp.kids=Math.max(0,Math.min(3,S.exp.kids+d));save();fbSync();rExp();renderBar();}
+function setExpField(field,value){S.exp[field]=parseFloat(value)||0;save();fbSync();updateExpTotals();renderBar();}
+function toggleWife(v){S.exp.hasWife=v;if(!v)S.exp.wifeAmt=0;document.getElementById('wife-inp-wrap').classList.toggle('hidden',!v);if(v)setTimeout(()=>document.getElementById('wife-inp')?.focus(),50);save();fbSync();updateExpTotals();renderBar();}
+function setWifeExp(v){S.exp.wifeAmt=parseFloat(v)||0;save();fbSync();updateExpTotals();renderBar();}
+function stepKids(d){S.exp.kids=Math.max(0,Math.min(3,S.exp.kids+d));save();fbSync();updateExpTotals();renderBar();}
+function updateExpTotals(){
+  const basic=(parseFloat(S.exp.housingBase)||0)+(parseFloat(S.exp.food)||0)+(parseFloat(S.exp.comm)||0)+(parseFloat(S.exp.transport)||0);
+  document.getElementById('basic-total').textContent=fmt(basic);
+  const wifeAmt=S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0;
+  const kidCost=parseFloat(S.exp.kidCost)||0;
+  document.getElementById('family-total').textContent=fmt(wifeAmt+S.exp.kids*kidCost);
+  document.getElementById('bank-pay').textContent=fmt((parseFloat(S.loans.bankRem)||0)*0.03);
+  document.getElementById('micro-pay').textContent=fmt((parseFloat(S.loans.microRem)||0)*0.30);
+  document.getElementById('exp-grand').textContent=fmt(totalExp());
+}
 let _borrowSource=null;
 function openBorrowModal(source){
   _borrowSource=source;
