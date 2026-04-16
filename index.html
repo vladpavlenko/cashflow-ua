@@ -144,6 +144,13 @@
     .hdr-meta { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
     .round-badge { background: var(--gold-dim); border: 1px solid var(--gold); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; color: var(--gold); letter-spacing: 0.5px; }
     .room-pill   { background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.3); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; color: var(--blue); font-family: var(--mono); letter-spacing: 1px; }
+    .passive-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.35); border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--blue); font-family: var(--mono); letter-spacing: 0.3px; white-space: nowrap; cursor: pointer; }
+    .passive-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+    .passive-badge.near-goal .passive-badge-dot { animation: pulse 1.5s infinite; }
+    .passive-badge.goal-reached { background: var(--gold-dim); border-color: rgba(245,166,35,0.4); color: var(--gold); }
+    .passive-badge.goal-reached .passive-badge-dot { background: var(--gold); animation: pulse 1.2s infinite; }
+    .mult-link { color: var(--gold); font-family: var(--mono); font-size: 12px; cursor: pointer; border-bottom: 1px dashed rgba(245,166,35,0.5); padding-bottom: 1px; white-space: nowrap; }
+    .mult-link:active { opacity: 0.7; }
     .live-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--sub); flex-shrink: 0; }
     .live-dot.on { background: var(--green); animation: pulse 1.8s infinite; }
     .hdr-right .cash-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--sub); text-align: right; }
@@ -334,6 +341,10 @@
       <div class="hdr-meta">
         <div class="round-badge" id="hdr-round">Раунд 1</div>
         <div class="room-pill hidden" id="hdr-room"></div>
+        <div class="passive-badge" id="hdr-passive" style="display:none" onclick="showPassiveInfo()" title="Натисни для деталей">
+          <span class="passive-badge-dot"></span>
+          <span id="hdr-passive-val">Пасив $0</span>
+        </div>
       </div>
     </div>
     <div class="hdr-right">
@@ -689,6 +700,21 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="m-mult" onclick="overlayClose(event,'m-mult')">
+  <div class="modal" style="max-height:70vh">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <div class="modal-title" id="mult-modal-title" style="margin-bottom:2px">Множник доходу</div>
+        <div style="font-size:12px;color:var(--sub)" id="mult-modal-sub">—</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:28px;font-weight:600;color:var(--gold)" id="mult-modal-total">×1.00</div>
+    </div>
+    <div id="mult-breakdown-list"></div>
+    <div style="background:var(--elevated);border-radius:10px;padding:11px 14px;margin-top:12px;font-size:12px;color:var(--sub);line-height:1.6" id="mult-formula-block"></div>
+    <button class="btn-cancel" style="margin-top:12px" onclick="closeModal('m-mult')">Закрити</button>
+  </div>
+</div>
+
 <!-- ══ LOGIC ══ -->
 <script>
 const UNI_SPECS=[
@@ -789,6 +815,7 @@ function addPay(inc){ if(!inc.field)return 0; return S.courses.filter(c=>c.field
 function mult(inc){ const bonusSum=S.trainings.reduce((sum,t)=>{ const v=inc.type==='employee'?t.mEmp:inc.type==='self'?t.mSelf:inc.type==='passive'?t.mBiz:1; return sum+((parseFloat(v)||1)-1); },0); return 1+bonusSum; }
 function fi(inc){ const base=parseFloat(inc.basePay)||0; return (base*mult(inc))+addPay(inc); }
 function totalInc(){ return S.incomes.reduce((s,i)=>s+fi(i),0); }
+function totalPassiveInc(){ return S.incomes.filter(i=>i.type==='passive').reduce((s,i)=>s+fi(i),0); }
 function hExp(){ const b=S.exp.housingBase; return S.exp.housingType==='partner'?0:S.exp.housingType==='split'?b/2:b; }
 function totalExp(){ return hExp()+S.exp.food+S.exp.comm+S.exp.transport+(S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0)+S.exp.kids*50+(parseFloat(S.loans.bankRem)||0)*0.03+(parseFloat(S.loans.microRem)||0)*0.30; }
 function bal(){ return totalInc()-totalExp(); }
@@ -804,6 +831,57 @@ function renderHdr(){
   const rp=document.getElementById('hdr-room');
   if(S.roomCode){rp.textContent='#'+S.roomCode;rp.classList.remove('hidden');}
   document.getElementById('live-dot').className='live-dot'+(_fbActive?' on':'');
+  const passive=totalPassiveInc();
+  const badgeEl=document.getElementById('hdr-passive');
+  const badgeValEl=document.getElementById('hdr-passive-val');
+  if(passive>0){
+    badgeEl.style.display='inline-flex';
+    badgeValEl.textContent='Пасив '+fmt(passive);
+    badgeEl.classList.remove('near-goal','goal-reached');
+    if(passive>=30000){badgeEl.classList.add('goal-reached');}
+    else if(passive>=20000){badgeEl.classList.add('near-goal');}
+  } else {
+    badgeEl.style.display='none';
+  }
+}
+function showPassiveInfo(){
+  const passive=totalPassiveInc();
+  const goal=30000;
+  const pct=Math.min(100,(passive/goal*100)).toFixed(0);
+  const needed=Math.max(0,goal-passive);
+  const passiveIncomes=S.incomes.filter(i=>i.type==='passive');
+  const list=passiveIncomes.length?passiveIncomes.map(i=>`• ${i.name}: ${fmt(fi(i))}/раунд`).join('\n'):'• немає пасивних доходів';
+  alert(`Пасивний дохід: ${fmt(passive)}/раунд\nЦіль (Раунд 2): ${fmt(goal)}\nПрогрес: ${pct}%\n`+(needed>0?`Ще потрібно: ${fmt(needed)}\n`:`✅ Ціль досягнута!\n`)+`\n${list}`);
+}
+function showMultBreakdown(incId){
+  const inc=S.incomes.find(i=>i.id===incId);
+  if(!inc)return;
+  const typeLbl={employee:'Найманий',self:'На себе',passive:'Пасивний',stipend:'Стипендія'};
+  document.getElementById('mult-modal-title').textContent=inc.name;
+  document.getElementById('mult-modal-sub').textContent=(typeLbl[inc.type]||inc.type)+(inc.field?' · '+inc.field:'');
+  const mKey=inc.type==='employee'?'mEmp':inc.type==='self'?'mSelf':inc.type==='passive'?'mBiz':null;
+  const relevant=mKey?S.trainings.filter(t=>(parseFloat(t[mKey])||1)!==1):[];
+  const totalMult=mult(inc);
+  document.getElementById('mult-modal-total').textContent='×'+totalMult.toFixed(2);
+  const listEl=document.getElementById('mult-breakdown-list');
+  const formulaBlock=document.getElementById('mult-formula-block');
+  if(relevant.length===0){
+    listEl.innerHTML='<div style="text-align:center;padding:20px 0;color:var(--sub);font-size:13px">Немає активних тренінгів для цього типу доходу</div>';
+    formulaBlock.style.display='none';
+    document.getElementById('mult-modal-total').textContent='×1.00';
+    openModal('m-mult');return;
+  }
+  const bonuses=relevant.map(t=>{const v=parseFloat(t[mKey])||1;return{name:t.name,val:v,bonus:v-1};});
+  listEl.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:4px">
+    <div style="display:grid;grid-template-columns:1fr 60px 60px;padding:8px 14px;background:var(--elevated);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);border-bottom:1px solid var(--border)"><div>Тренінг</div><div style="text-align:right">Значення</div><div style="text-align:right">Бонус</div></div>
+    ${bonuses.map(b=>`<div style="display:grid;grid-template-columns:1fr 60px 60px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center"><div style="font-size:13px;font-weight:500">${b.name}</div><div style="text-align:right;font-family:var(--mono);font-size:13px;color:var(--sub)">×${b.val.toFixed(2)}</div><div style="text-align:right;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--gold)">+${b.bonus.toFixed(2)}</div></div>`).join('')}
+    <div style="display:grid;grid-template-columns:1fr 60px 60px;padding:10px 14px;background:var(--elevated);align-items:center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--sub)">Разом</div><div></div><div style="text-align:right;font-family:var(--mono);font-size:16px;font-weight:600;color:var(--gold)">×${totalMult.toFixed(2)}</div></div>
+  </div>`;
+  formulaBlock.style.display='block';
+  const bonusStr=bonuses.map(b=>'+'+b.bonus.toFixed(2)).join(' ');
+  const totalBonus=(totalMult-1).toFixed(2);
+  formulaBlock.innerHTML=`<strong style="color:var(--text)">Формула:</strong> 1 ${bonusStr} = 1 + ${totalBonus} = ×${totalMult.toFixed(2)}<br><span style="margin-top:4px;display:block">База ${fmt(parseFloat(inc.basePay)||0)} × ${totalMult.toFixed(2)} = <strong style="color:var(--green)">${fmt((parseFloat(inc.basePay)||0)*totalMult)}</strong></span>`;
+  openModal('m-mult');
 }
 function renderBar(){
   const i=totalInc(),e=totalExp(),b=bal();
@@ -843,7 +921,8 @@ function rInc(){
     if(inc.type==='passive'&&inc.condition){sub+=' · Умова: '+inc.condition.label;}
     else if(inc.type!=='passive'&&inc.field){sub+=' · '+inc.field;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
-    return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div><div class="col-r sub">×${mx.toFixed(2)}</div><div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
+    const multEl=mx>1?`<div class="col-r"><span class="mult-link" onclick="showMultBreakdown('${inc.id}')">×${mx.toFixed(2)}</span></div>`:`<div class="col-r sub">×${mx.toFixed(2)}</div>`;
+    return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div>${multEl}<div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
   }
   const active=S.incomes.filter(i=>i.type==='employee'||i.type==='self'||i.type==='stipend');
   const passive=S.incomes.filter(i=>i.type==='passive');
@@ -1167,6 +1246,14 @@ function finishRound(){
   (S.educations||[]).forEach(edu=>{if(!edu.completed&&edu.roundsLeft>0)edu.roundsLeft--;});
   closeModal('m-debt');closeModal('m-end');
   save();fbSync();renderAll();
+  const passive=totalPassiveInc();
+  if(passive>=30000){
+    setTimeout(()=>{
+      if(confirm(`🎉 Пасивний дохід досяг ${fmt(passive)}/раунд!\n\nУмова переходу виконана (мінімум $30,000).\nПерейти до Раунду 2?`)){
+        alert('Раунд 2 буде доступний у наступному оновленні. Продовжуй накопичувати!');
+      }
+    },300);
+  }
 }
 function confirmRound(){
   _balanceSnapshot=bal();
