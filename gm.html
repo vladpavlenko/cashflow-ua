@@ -341,7 +341,7 @@
     </div>
     <div class="gm-header-right">
       <div class="live-pill"><div class="live-dot"></div><span>LIVE</span></div>
-      <div class="player-count" id="player-count">0 гравців</div>
+      <div class="player-count" id="hdr-player-count">0 гравців</div>
       <button class="btn-leave" onclick="leaveRoom()">← Вийти</button>
     </div>
   </div>
@@ -437,7 +437,7 @@ function renderDashboard() {
   const online  = entries.filter(([,p]) => p._online !== false);
   const total   = entries.length;
 
-  document.getElementById('player-count').textContent = total + ' гравець' + (total === 1 ? '' : total < 5 ? 'ів' : 'ів');
+  document.getElementById('hdr-player-count').textContent = total + ' гравець' + (total === 1 ? '' : total < 5 ? 'ів' : 'ів');
 
   // Toggle empty vs grid
   const grid  = document.getElementById('players-grid');
@@ -446,46 +446,119 @@ function renderDashboard() {
   else             { grid.classList.remove('hidden'); empty.classList.add('hidden'); }
 
   // Summary bar
-  renderSummary(entries.map(([,p])=>p));
+  const players = entries.map(([,p])=>p);
+  renderSummary(players);
+  renderLeaderboard(players);
 
   // Anomaly flags
-  checkAnomalies(entries.map(([,p])=>p));
+  checkAnomalies(players);
 
   // Player cards
   grid.innerHTML = entries.map(([key, p]) => playerCard(key, p)).join('');
 }
 
 function renderSummary(players) {
-  if (!players.length) { document.getElementById('summary-bar').innerHTML=''; return; }
-  const totalCash = players.reduce((s,p)=>s+(p.cash||0),0);
-  const totalInc  = players.reduce((s,p)=>s+(p.totalIncome||0),0);
-  const totalExp  = players.reduce((s,p)=>s+(p.totalExpense||0),0);
-  const avgBal    = players.length ? (totalInc-totalExp)/players.length : 0;
-  const online    = players.filter(p=>p._online!==false).length;
+  const online = players.filter(p=>p._online!==false).length;
   document.getElementById('summary-bar').innerHTML = `
-    <div class="sum-item"><div class="sum-lbl">Гравців онлайн</div><div class="sum-val">${online} / ${players.length}</div></div>
-    <div class="sum-item"><div class="sum-lbl">Загальна готівка</div><div class="sum-val gold mono">$${Math.abs(totalCash).toFixed(0)}</div></div>
-    <div class="sum-item"><div class="sum-lbl">Заг. дохід / раунд</div><div class="sum-val green mono">$${totalInc.toFixed(0)}</div></div>
-    <div class="sum-item"><div class="sum-lbl">Заг. витрати / раунд</div><div class="sum-val red mono">$${totalExp.toFixed(0)}</div></div>
-    <div class="sum-item"><div class="sum-lbl">Сер. сальдо</div><div class="sum-val ${avgBal>=0?'green':'red'} mono">${avgBal>=0?'+':'−'}$${Math.abs(avgBal).toFixed(0)}</div></div>
+    <div class="sum-item" style="flex-shrink:0">
+      <div class="sum-lbl">Гравців онлайн</div>
+      <div class="sum-val" id="player-count">${online} / ${players.length}</div>
+    </div>
+    <div style="width:1px;background:var(--border);flex-shrink:0;align-self:stretch;margin:8px 0"></div>
+    <div id="leaderboard-bar"
+         style="display:flex;gap:8px;overflow-x:auto;align-items:center;padding:4px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex:1">
+    </div>
   `;
+}
+
+function renderLeaderboard(players) {
+  const bar = document.getElementById('leaderboard-bar');
+  if (!bar) return;
+
+  const withPassive = players
+    .filter(p => p.playerName)
+    .map(p => ({
+      name:    p.playerName,
+      passive: calcPassiveForPlayer(p),
+      online:  p._online !== false,
+    }))
+    .sort((a, b) => b.passive - a.passive);
+
+  if (withPassive.length === 0) {
+    bar.innerHTML = '<div style="font-size:12px;color:var(--sub);padding:0 8px">Очікуємо гравців...</div>';
+    return;
+  }
+
+  const medals = ['🥇', '🥈', '🥉'];
+  bar.innerHTML = withPassive.map((p, i) => {
+    const medal = medals[i] || `${i+1}.`;
+    const color = i===0 ? 'var(--gold)' : i===1 ? '#94a3b8' : i===2 ? '#cd7f32' : 'var(--sub)';
+    const dot   = p.online ? '<span style="width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;margin-left:4px"></span>' : '';
+    return `<div style="display:flex;align-items:center;gap:6px;background:var(--elevated);border:1px solid var(--border);border-radius:20px;padding:4px 12px;flex-shrink:0;white-space:nowrap">
+      <span style="font-size:13px">${medal}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--text)">${p.name}</span>
+      ${dot}
+      <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:${color}">$${Math.round(p.passive).toLocaleString()}</span>
+    </div>`;
+  }).join('');
+}
+
+function calcPassiveForPlayer(p) {
+  if (!p.incomes || !Array.isArray(p.incomes)) return 0;
+  const passiveIncomes = p.incomes.filter(i => i.type === 'passive');
+  if (passiveIncomes.length === 0) return 0;
+  const courses   = p.courses   || [];
+  const trainings = p.trainings || [];
+  return passiveIncomes.reduce((sum, inc) => {
+    const basePay  = parseFloat(inc.basePay) || 0;
+    const addPay   = inc.field
+      ? courses.filter(c => c.field?.trim().toLowerCase() === inc.field?.trim().toLowerCase()).reduce((s,c)=>s+(parseFloat(c.pay)||0), 0)
+      : 0;
+    const bonusSum = trainings.reduce((s,t) => s + ((parseFloat(t.mBiz)||1) - 1), 0);
+    return sum + (basePay * (1 + bonusSum)) + addPay;
+  }, 0);
 }
 
 function checkAnomalies(players) {
   const flags = [];
   players.forEach(p => {
-    if (p.cash < 0) flags.push(`${p.playerName}: готівка від'ємна ($${p.cash})`);
-    if ((p.loans?.bankRem||0) > 3000)  flags.push(`${p.playerName}: борг банку перевищує ліміт ($3,000)`);
-    if ((p.loans?.microRem||0) > 30000) flags.push(`${p.playerName}: мікрокредит перевищує ліміт ($30,000)`);
-    if ((p.exp?.kids||0) > 3) flags.push(`${p.playerName}: більше 3 дітей (${p.exp.kids})`);
+    if ((p.cash || 0) < 0)
+      flags.push(`${p.playerName}: готівка від'ємна ($${p.cash})`);
+    if ((p.loans?.bankRem  || 0) > 3000)
+      flags.push(`${p.playerName}: борг банку перевищує ліміт`);
+    if ((p.loans?.microRem || 0) > 30000)
+      flags.push(`${p.playerName}: мікрокредит перевищує ліміт → банкрутство`);
+    if ((p.exp?.kids || 0) > 3)
+      flags.push(`${p.playerName}: більше 3 дітей`);
+    const activeCount = (p.incomes || []).filter(i => i.type==='employee' || i.type==='self' || i.type==='stipend').length;
+    if (activeCount > 2)
+      flags.push(`${p.playerName}: більше 2 активних доходів (${activeCount})`);
   });
   const banner = document.getElementById('alert-banner');
   if (flags.length) {
     banner.classList.remove('hidden');
-    document.getElementById('alert-text').textContent = '⚠️ Увага: ' + flags.join(' · ');
+    document.getElementById('alert-text').textContent = flags.join(' · ');
   } else {
     banner.classList.add('hidden');
   }
+}
+
+function getEduDisplay(p) {
+  const educations = p.educations || [];
+  if (educations.length === 0) return { icon: '🚶', label: 'Без навчання', sub: '' };
+  const active    = educations.filter(e => !e.completed);
+  const completed = educations.filter(e =>  e.completed);
+  const parts = [];
+  active.forEach(e => {
+    const done = (e.roundsTotal || 0) - (e.roundsLeft || 0);
+    parts.push(`📚 ${e.specialty?.name ?? (e.type==='university'?'Університет':'Технікум')} · ${done}/${e.roundsTotal||'?'} раундів`);
+  });
+  completed.forEach(e => parts.push(`✅ ${e.specialty?.name ?? e.type}`));
+  return {
+    icon:  active.length > 0 ? '📚' : '✅',
+    label: active.length > 0 ? 'Студент' : 'Освіта отримана',
+    sub:   parts.join(' · '),
+  };
 }
 
 function playerCard(key, p) {
@@ -495,44 +568,66 @@ function playerCard(key, p) {
   const balSign = bal >= 0 ? '+' : '−';
   const exp     = _expanded[key];
 
-  const eduIcon = p.education === 'university' ? '🎓'
-                : p.education === 'college'    ? '🔧' : '🚶';
-  const eduLabel = p.education === 'university' ? 'Університет'
-                 : p.education === 'college'    ? 'Технікум' : 'Без освіти';
-  const specLabel = p.specialtyName ? ` · ${p.specialtyName}` : '';
+  const edu = getEduDisplay(p);
 
   // Anomaly flags
   let flags = '';
-  if (p.cash < 0) flags += '<span class="flag-badge">Борг!</span>';
-  if ((p.loans?.bankRem||0) > 3000)  flags += '<span class="flag-badge">Банк↑</span>';
+  if ((p.cash||0) < 0) flags += '<span class="flag-badge">Борг!</span>';
+  if ((p.loans?.bankRem||0)  > 3000)  flags += '<span class="flag-badge">Банк↑</span>';
   if ((p.loans?.microRem||0) > 30000) flags += '<span class="flag-badge">МКО↑</span>';
+
+  // Passive income row
+  const passive = calcPassiveForPlayer(p);
+  const goal    = 30000;
+  const pct     = Math.min(100, Math.round(passive / goal * 100));
+  const passiveColor = passive >= 30000 ? 'var(--gold)' : 'var(--blue)';
+  const passiveRow = `
+    <div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">Пасивний дохід</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:${passiveColor}">$${Math.round(passive).toLocaleString()}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--sub);margin-bottom:4px">до Раунду 2 · ${pct}%</div>
+        <div style="width:80px;height:4px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${passiveColor};border-radius:4px"></div>
+        </div>
+      </div>
+    </div>`;
 
   // Detail section (expanded)
   let detail = '';
   if (exp) {
-    const inc  = p.incomes || [];
-    const crs  = p.courses || [];
-    const trn  = p.trainings || [];
-    const ex   = p.exp || {};
-    const loans= p.loans || {};
+    const inc   = p.incomes   || [];
+    const crs   = p.courses   || [];
+    const trn   = p.trainings || [];
+    const ex    = p.exp       || {};
+    const loans = p.loans     || {};
     const typeLbl = {employee:'Найманий',self:'На себе',stipend:'Стипендія',passive:'Пасивний'};
+    const housingAmt = parseFloat(ex.housingBase) || 0;
+    const kidCost    = parseFloat(ex.kidCost)     || 0;  // AUTO-ADDED from index.html
+    const kids       = ex.kids || 0;
 
     detail = `<div class="pc-detail">
       ${inc.length ? `<div class="detail-section">
         <div class="detail-title">Доходи</div>
-        ${inc.map(i=>`<div class="detail-row"><span class="lft">${i.name} <span style="opacity:.5;font-size:11px">${typeLbl[i.type]||i.type}</span></span><span class="rgt pos">$${(i.basePay||0).toFixed(0)}</span></div>`).join('')}
+        ${inc.map(i => {
+          // AUTO-ADDED from index.html: show condition for passive incomes
+          const condLabel = i.type==='passive' && i.condition ? ` · Умова: ${i.condition.label}` : (i.field ? ` · ${i.field}` : '');
+          return `<div class="detail-row"><span class="lft">${i.name} <span style="opacity:.5;font-size:11px">${typeLbl[i.type]||i.type}${condLabel}</span></span><span class="rgt pos">$${(i.basePay||0).toFixed(0)}</span></div>`;
+        }).join('')}
       </div>` : ''}
 
       <div class="detail-section">
         <div class="detail-title">Витрати</div>
-        <div class="detail-row"><span class="lft">${ex.housingLabel||'Житло'}</span><span class="rgt neg">$${hExpCalc(ex).toFixed(0)}</span></div>
-        <div class="detail-row"><span class="lft">Їжа</span><span class="rgt neg">$${(ex.food||0).toFixed(0)}</span></div>
-        <div class="detail-row"><span class="lft">Зв'язок</span><span class="rgt neg">$${(ex.comm||0).toFixed(0)}</span></div>
-        <div class="detail-row"><span class="lft">Транспорт</span><span class="rgt neg">$${(ex.transport||0).toFixed(0)}</span></div>
-        ${ex.hasWife?`<div class="detail-row"><span class="lft">💍 Дружина</span><span class="rgt neg">$${(ex.wifeAmt||0).toFixed(0)}</span></div>`:''}
-        ${ex.kids?`<div class="detail-row"><span class="lft">👶 Діти (${ex.kids})</span><span class="rgt neg">$${(ex.kids*50).toFixed(0)}</span></div>`:''}
-        ${(loans.bankRem>0)?`<div class="detail-row"><span class="lft">🏦 Банк (залишок $${loans.bankRem})</span><span class="rgt neg">$${(loans.bankRem*0.03).toFixed(0)}</span></div>`:''}
-        ${(loans.microRem>0)?`<div class="detail-row"><span class="lft">💸 Мікрокредит (залишок $${loans.microRem})</span><span class="rgt neg">$${(loans.microRem*0.30).toFixed(0)}</span></div>`:''}
+        <div class="detail-row"><span class="lft">${ex.housingLabel||'Житло'}</span><span class="rgt neg">$${housingAmt.toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">Їжа</span><span class="rgt neg">$${(parseFloat(ex.food)||0).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">Зв'язок</span><span class="rgt neg">$${(parseFloat(ex.comm)||0).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">Транспорт</span><span class="rgt neg">$${(parseFloat(ex.transport)||0).toFixed(0)}</span></div>
+        ${ex.hasWife ? `<div class="detail-row"><span class="lft">💍 Партнер</span><span class="rgt neg">$${(parseFloat(ex.wifeAmt)||0).toFixed(0)}</span></div>` : ''}
+        ${kids > 0 ? `<div class="detail-row"><span class="lft">👶 Діти (${kids} × $${kidCost})</span><span class="rgt neg">$${(kids*kidCost).toFixed(0)}</span></div>` : ''}
+        ${(loans.bankRem>0)  ? `<div class="detail-row"><span class="lft">🏦 Банк (залишок $${loans.bankRem})</span><span class="rgt neg">$${(loans.bankRem*0.03).toFixed(0)}</span></div>` : ''}
+        ${(loans.microRem>0) ? `<div class="detail-row"><span class="lft">💸 Мікрокредит (залишок $${loans.microRem})</span><span class="rgt neg">$${(loans.microRem*0.30).toFixed(0)}</span></div>` : ''}
       </div>
 
       ${crs.length ? `<div class="detail-section">
@@ -542,7 +637,7 @@ function playerCard(key, p) {
 
       ${trn.length ? `<div class="detail-section">
         <div class="detail-title">Тренінги (${trn.length})</div>
-        ${trn.map(t=>`<div class="detail-row"><span class="lft">${t.name}</span><span class="rgt gold">×${(t.mEmp||1).toFixed(2)} / ×${(t.mSelf||1).toFixed(2)} / ×${(t.mBiz||1).toFixed(2)}</span></div>`).join('')}
+        ${trn.map(t=>`<div class="detail-row"><span class="lft">${t.name}</span><span class="rgt gold">×${(parseFloat(t.mEmp)||1).toFixed(2)} / ×${(parseFloat(t.mSelf)||1).toFixed(2)} / ×${(parseFloat(t.mBiz)||1).toFixed(2)}</span></div>`).join('')}
       </div>` : ''}
     </div>`;
   }
@@ -560,12 +655,13 @@ function playerCard(key, p) {
     </div>
     <div class="pc-meta">
       <div class="pc-badge">Раунд ${p.round||1}</div>
-      <div class="pc-edu">${eduIcon} ${eduLabel}${specLabel}</div>
+      <div class="pc-edu">${edu.icon} ${edu.sub || edu.label}</div>
     </div>
     <div class="pc-cash-row">
       <div class="pc-cash-lbl">Готівка</div>
       <div class="pc-cash-val">$${Math.abs(p.cash||0).toFixed(0)}</div>
     </div>
+    ${passiveRow}
     <div class="pc-fin">
       <div class="pc-fin-item inc"><div class="pc-fin-lbl">Дохід</div><div class="pc-fin-val">$${(p.totalIncome||0).toFixed(0)}</div></div>
       <div class="pc-fin-item exp"><div class="pc-fin-lbl">Витрати</div><div class="pc-fin-val">$${(p.totalExpense||0).toFixed(0)}</div></div>
