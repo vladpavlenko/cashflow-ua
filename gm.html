@@ -10,7 +10,7 @@
 
   <script type="module">
     import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     /* ═══════════════════════════════════════
        🔥 ТІ САМІ КЛЮЧІ ЩО В index.html
@@ -52,6 +52,27 @@
         await set(ref(_db, `rooms/${roomCode.toUpperCase()}/_created`), Date.now());
         return true;
       } catch(e) { return false; }
+    };
+
+    window._gmRemovePlayer = async (roomCode, playerKey) => {
+      try {
+        await remove(ref(_db, `rooms/${roomCode}/players/${playerKey}`));
+        return true;
+      } catch(e) { console.error(e); return false; }
+    };
+
+    window._gmClearRoom = async (roomCode) => {
+      try {
+        await remove(ref(_db, `rooms/${roomCode}/players`));
+        return true;
+      } catch(e) { console.error(e); return false; }
+    };
+
+    window._gmDeleteRoom = async (roomCode) => {
+      try {
+        await remove(ref(_db, `rooms/${roomCode}`));
+        return true;
+      } catch(e) { console.error(e); return false; }
     };
   </script>
 
@@ -288,6 +309,24 @@
     .empty-sub   { font-size: 14px; line-height: 1.6; }
     .room-code-big { font-family: var(--mono); font-size: 42px; font-weight: 700; color: var(--gold); letter-spacing: 8px; margin: 24px 0 8px; border: 2px dashed rgba(245,166,35,0.3); border-radius: 14px; padding: 16px 24px; display: inline-block; }
 
+    /* Room management dropdown */
+    .room-menu-btn {
+      display: block;
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: left;
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .room-menu-btn:hover { background: var(--elevated); }
+
     /* Alert banner */
     .alert-banner {
       background: var(--red-dim);
@@ -343,6 +382,26 @@
       <div class="live-pill"><div class="live-dot"></div><span>LIVE</span></div>
       <div class="player-count" id="hdr-player-count">0 гравців</div>
       <button class="btn-leave" onclick="leaveRoom()">← Вийти</button>
+      <div style="position:relative" id="room-mgmt-wrap">
+        <button class="btn-leave" onclick="toggleRoomMenu()"
+                style="border-color:var(--border);color:var(--sub)">
+          ⚙️ Кімната
+        </button>
+        <div id="room-menu" class="hidden"
+             style="position:absolute;right:0;top:calc(100% + 6px);
+                    background:var(--surface);border:1px solid var(--border);
+                    border-radius:12px;padding:6px;min-width:200px;z-index:50;
+                    box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+          <button class="room-menu-btn" onclick="gmClearRoom()">
+            🧹 Очистити всіх гравців
+          </button>
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <button class="room-menu-btn" onclick="gmDeleteRoom()"
+                  style="color:var(--red)">
+            🗑️ Закрити кімнату повністю
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -648,9 +707,16 @@ function playerCard(key, p) {
         <span class="pc-name">${p.playerName || key}</span>
         ${flags}
       </div>
-      <div class="pc-status">
-        <div class="pc-dot ${online?'on':''}"></div>
-        <span>${online ? 'онлайн' : 'офлайн'}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="pc-status">
+          <div class="pc-dot ${online?'on':''}"></div>
+          <span>${online ? 'онлайн' : 'офлайн'}</span>
+        </div>
+        <button onclick="gmKickPlayer('${key}')"
+                title="Видалити гравця з кімнати"
+                style="background:none;border:none;color:var(--sub);
+                       cursor:pointer;font-size:15px;padding:8px;
+                       border-radius:6px">✕</button>
       </div>
     </div>
     <div class="pc-meta">
@@ -691,6 +757,63 @@ function showAlert(msg){
   const b=document.getElementById('alert-banner');
   b.classList.remove('hidden');
   document.getElementById('alert-text').textContent=msg;
+}
+
+/* ── Room management ── */
+function toggleRoomMenu() {
+  document.getElementById('room-menu').classList.toggle('hidden');
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('room-mgmt-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('room-menu')?.classList.add('hidden');
+  }
+});
+
+async function gmKickPlayer(playerKey) {
+  const playerData = _players[playerKey];
+  const name = playerData?.playerName || playerKey;
+
+  if (!confirm(`Видалити гравця "${name}" з кімнати?\nЦе не скине його локальний стан гри.`)) return;
+
+  const ok = await window._gmRemovePlayer?.(_currentRoom, playerKey);
+  if (ok) {
+    console.log(`Гравець ${name} видалений з кімнати`);
+    // Firebase onValue автоматично оновить _players і перемалює картки
+  } else {
+    alert('Помилка видалення. Перевір підключення.');
+  }
+}
+
+async function gmClearRoom() {
+  const count = Object.keys(_players).filter(k => !k.startsWith('_')).length;
+  if (!confirm(`Очистити кімнату #${_currentRoom}?\nБуде видалено ${count} гравців.`)) return;
+
+  const ok = await window._gmClearRoom?.(_currentRoom);
+  if (ok) {
+    _players = {};
+    document.getElementById('room-menu')?.classList.add('hidden');
+    renderDashboard();
+  } else {
+    alert('Помилка очистки. Перевір підключення.');
+  }
+}
+
+async function gmDeleteRoom() {
+  if (!confirm(
+    `УВАГА: Закрити кімнату #${_currentRoom} повністю?\n` +
+    `Всі дані гравців будуть видалені з Firebase.\n` +
+    `Локальний стан гравців (localStorage) залишиться.`
+  )) return;
+
+  const ok = await window._gmDeleteRoom?.(_currentRoom);
+  if (ok) {
+    document.getElementById('room-menu')?.classList.add('hidden');
+    leaveRoom();
+  } else {
+    alert('Помилка видалення кімнати.');
+  }
 }
 
 /* ── Init ── */
