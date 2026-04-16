@@ -10,6 +10,7 @@
   <title>CashFlow UA</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="lang.js"></script>
 
   <!-- ═══════════════════════════════════════════
        🔥 FIREBASE — замінити на свої ключі!
@@ -278,6 +279,13 @@
     .btn-cancel { width:100%; background:transparent; border:1px solid var(--border); border-radius:12px; padding:13px; color:var(--sub); font-family:var(--body); font-size:14px; cursor:pointer; margin-top:8px; }
     @keyframes fadein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
     .tab-pane > * { animation: fadein 0.22s ease; }
+
+    /* Lang switcher */
+    .lang-switcher { display:flex; gap:3px; }
+    .lang-btn { background:transparent; border:1px solid var(--border); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:600; color:var(--sub); cursor:pointer; font-family:var(--mono); letter-spacing:0.5px; transition:border-color 0.15s,color 0.15s; }
+    .lang-btn.active { border-color:var(--gold); color:var(--gold); }
+    .lang-btn:hover:not(.active) { border-color:var(--text); color:var(--text); }
+    .lang-switcher-fixed { position:fixed; top:10px; right:12px; z-index:200; display:flex; gap:3px; }
   </style>
 </head>
 <body>
@@ -286,52 +294,56 @@
 <div id="setup-screen">
   <div class="logo-wrap">
     <h1>CashFlow</h1>
-    <p>Фінансова гра</p>
-  </div>
-
-  <div class="card">
-    <div class="card-label">🎮 Код кімнати</div>
-    <input type="text" class="room-input" id="inp-room" placeholder="ABCD"
-           maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false"
-           oninput="onRoomInput(this.value)">
-    <div class="room-hint">Попроси ведучого показати код кімнати</div>
-    <div class="sync-badge off" id="sync-badge">
-      <div class="sync-dot"></div>
-      <span>Введи код → синхронізація з ведучим</span>
+    <p data-i18n="logoSub">Фінансова гра</p>
+    <div class="lang-switcher" style="justify-content:center;margin-top:10px">
+      <button class="lang-btn" data-lang="UA" onclick="setLang('UA')">UA</button>
+      <button class="lang-btn" data-lang="RU" onclick="setLang('RU')">RU</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-label">Ім'я гравця</div>
-    <input type="text" class="text-input" id="inp-name" placeholder="Введіть ваше ім'я..." maxlength="20" autocomplete="off">
+    <div class="card-label" data-i18n="setupRoomLabel">🎮 Код кімнати</div>
+    <input type="text" class="room-input" id="inp-room" placeholder="ABCD"
+           maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false"
+           oninput="onRoomInput(this.value)">
+    <div class="room-hint" data-i18n="setupRoomHint">Попроси ведучого показати код кімнати</div>
+    <div class="sync-badge off" id="sync-badge">
+      <div class="sync-dot"></div>
+      <span data-i18n="setupRoomSyncOff">Введи код → синхронізація з ведучим</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label" data-i18n="setupNameLabel">Ім'я гравця</div>
+    <input type="text" class="text-input" id="inp-name" data-i18n-ph="setupNamePh" placeholder="Введіть ваше ім'я..." maxlength="20" autocomplete="off">
   </div>
 
   <div class="card" id="card-edu">
-    <div class="card-label">Освіта — Раунд 1</div>
+    <div class="card-label" data-i18n="setupEduLabel">Освіта — Раунд 1</div>
     <div class="choice-grid">
       <div class="choice-btn" id="btn-uni" onclick="pickEdu('university')">
-        <div class="icon">🎓</div><div class="lbl">Університет</div>
-        <div class="sub-lbl">4 спеціальності</div>
-        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+        <div class="icon">🎓</div><div class="lbl" data-i18n="setupEduUni">Університет</div>
+        <div class="sub-lbl" data-i18n="setupEduUniSub">4 спеціальності</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px" data-i18n="setupEduStipend">Стипендія $30</div>
       </div>
       <div class="choice-btn" id="btn-col" onclick="pickEdu('college')">
-        <div class="icon">🔧</div><div class="lbl">Технікум</div>
-        <div class="sub-lbl">6 спеціальностей</div>
-        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+        <div class="icon">🔧</div><div class="lbl" data-i18n="setupEduCol">Технікум</div>
+        <div class="sub-lbl" data-i18n="setupEduColSub">6 спеціальностей</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px" data-i18n="setupEduStipend">Стипендія $30</div>
       </div>
     </div>
     <div class="choice-btn-wide" id="btn-none" onclick="pickEdu('none')">
       <span style="font-size:22px">🚶</span>
-      <div><div class="lbl">Не навчатись</div><div class="sub-lbl">Квартира $200 · Без доходу</div></div>
+      <div><div class="lbl" data-i18n="setupEduNone">Не навчатись</div><div class="sub-lbl" data-i18n="setupEduNoneSub">Квартира $200 · Без доходу</div></div>
     </div>
   </div>
 
   <div class="card hidden" id="card-spec">
-    <div class="card-label" id="spec-label">Спеціальність</div>
+    <div class="card-label" id="spec-label" data-i18n="setupSpecLabel">Спеціальність</div>
     <div class="spec-list" id="spec-list"></div>
   </div>
 
-  <button class="btn-primary" onclick="startGame()">Почати гру →</button>
+  <button class="btn-primary" onclick="startGame()" data-i18n="setupStartBtn">Почати гру →</button>
 </div>
 
 
@@ -346,87 +358,91 @@
       <div class="hdr-meta">
         <div class="round-badge" id="hdr-round">Раунд 1</div>
         <div class="room-pill hidden" id="hdr-room"></div>
-        <div class="passive-badge" id="hdr-passive" style="display:none" onclick="showPassiveInfo()" title="Натисни для деталей">
+        <div class="passive-badge" id="hdr-passive" style="display:none" onclick="showPassiveInfo()" data-i18n-title="passiveBadgeTitle">
           <span class="passive-badge-dot"></span>
           <span id="hdr-passive-val">Пасив $0</span>
         </div>
       </div>
     </div>
     <div class="hdr-right">
-      <button onclick="resetGame()" title="Скинути гру"
+      <div class="lang-switcher" style="margin-bottom:4px">
+        <button class="lang-btn" data-lang="UA" onclick="setLang('UA')">UA</button>
+        <button class="lang-btn" data-lang="RU" onclick="setLang('RU')">RU</button>
+      </div>
+      <button onclick="resetGame()" data-i18n-title="resetTitle"
         style="background:none;border:none;color:var(--sub);font-size:18px;cursor:pointer;padding:4px;margin-bottom:4px;"
         onmouseover="this.style.color='var(--red)'"
         onmouseout="this.style.color='var(--sub)'">🔄</button>
-      <div class="cash-label">Готівка</div>
+      <div class="cash-label" data-i18n="hdrCashLabel">Готівка</div>
       <div class="cash-value" id="hdr-cash">$500</div>
     </div>
   </div>
 
   <div class="tab-bar">
-    <div class="tab active" id="tab-ov"  onclick="setTab('ov')">Огляд</div>
-    <div class="tab"        id="tab-inc" onclick="setTab('inc')">Доходи</div>
-    <div class="tab"        id="tab-exp" onclick="setTab('exp')">Витрати</div>
-    <div class="tab"        id="tab-crs" onclick="setTab('crs')">Курси</div>
-    <div class="tab"        id="tab-trn" onclick="setTab('trn')">Тренінги</div>
+    <div class="tab active" id="tab-ov"  onclick="setTab('ov')"  data-i18n="tabOv">Огляд</div>
+    <div class="tab"        id="tab-inc" onclick="setTab('inc')" data-i18n="tabInc">Доходи</div>
+    <div class="tab"        id="tab-exp" onclick="setTab('exp')" data-i18n="tabExp">Витрати</div>
+    <div class="tab"        id="tab-crs" onclick="setTab('crs')" data-i18n="tabCrs">Курси</div>
+    <div class="tab"        id="tab-trn" onclick="setTab('trn')" data-i18n="tabTrn">Тренінги</div>
   </div>
 
   <div class="content">
     <!-- OVERVIEW -->
     <div class="tab-pane" id="pane-ov">
       <div class="ov-cash">
-        <div class="ov-cash-label">Поточна готівка</div>
+        <div class="ov-cash-label" data-i18n="ovCashLabel">Поточна готівка</div>
         <div class="ov-cash-val" id="ov-cash">$500</div>
         <div class="ov-cash-curr">USD</div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card inc-card"><div class="stat-lbl">Дохід / раунд</div><div class="stat-val" id="ov-inc">$0</div></div>
-        <div class="stat-card exp-card"><div class="stat-lbl">Витрати / раунд</div><div class="stat-val" id="ov-exp">$0</div></div>
+        <div class="stat-card inc-card"><div class="stat-lbl" data-i18n="ovIncLabel">Дохід / раунд</div><div class="stat-val" id="ov-inc">$0</div></div>
+        <div class="stat-card exp-card"><div class="stat-lbl" data-i18n="ovExpLabel">Витрати / раунд</div><div class="stat-val" id="ov-exp">$0</div></div>
       </div>
-      <div class="bal-card pos" id="ov-bal-card"><div class="bl">Сальдо</div><div class="bv" id="ov-bal">$0</div></div>
+      <div class="bal-card pos" id="ov-bal-card"><div class="bl" data-i18n="ovBalLabel">Сальдо</div><div class="bv" id="ov-bal">$0</div></div>
       <div class="edu-badge">
         <div class="edu-icon" id="ov-edu-icon">🎓</div>
         <div><div class="edu-text" id="ov-edu-text">—</div><div class="edu-sub" id="ov-edu-sub">—</div></div>
       </div>
       <div id="study-buttons-container" style="margin-bottom:12px"></div>
-      <button class="btn-round" onclick="openEndRound()">Завершити раунд →</button>
+      <button class="btn-round" onclick="openEndRound()" data-i18n="ovEndRoundBtn">Завершити раунд →</button>
     </div>
 
     <!-- INCOME -->
     <div class="tab-pane hidden" id="pane-inc">
-      <div class="sec-hdr"><div class="sec-title">Доходи</div><button class="btn-add" onclick="openAddIncomeModal()">+ Додати</button></div>
+      <div class="sec-hdr"><div class="sec-title" data-i18n="incTitle">Доходи</div><button class="btn-add" onclick="openAddIncomeModal()" data-i18n="incAddBtn">+ Додати</button></div>
       <div id="inc-wrap"></div>
-      <div class="total-row"><div class="total-lbl">Усього доходів</div><div class="total-val green" id="inc-total">$0</div></div>
+      <div class="total-row"><div class="total-lbl" data-i18n="incTotalLabel">Усього доходів</div><div class="total-val green" id="inc-total">$0</div></div>
     </div>
 
     <!-- EXPENSES -->
     <div class="tab-pane hidden" id="pane-exp">
-      <div class="sec-hdr"><div class="sec-title">Витрати</div></div>
+      <div class="sec-hdr"><div class="sec-title" data-i18n="expTitle">Витрати</div></div>
       <div class="fin-tbl">
-        <div class="exp-head"><div>Стаття</div><div style="text-align:right">Сума</div></div>
+        <div class="exp-head"><div data-i18n="expHeadItem">Стаття</div><div style="text-align:right" data-i18n="expHeadAmt">Сума</div></div>
         <div class="exp-input-row">
           <div class="exp-input-lbl" id="exp-h-lbl">Гуртожиток</div>
           <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-h-inp" min="0" oninput="setExpField('housingBase', this.value)"></div>
         </div>
         <div class="exp-input-row">
-          <div class="exp-input-lbl">🍕 Їжа</div>
+          <div class="exp-input-lbl" data-i18n="expFood">🍕 Їжа</div>
           <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-food-inp" min="0" oninput="setExpField('food', this.value)"></div>
         </div>
         <div class="exp-input-row">
-          <div class="exp-input-lbl">📱 Зв'язок</div>
+          <div class="exp-input-lbl" data-i18n="expComm">📱 Зв'язок</div>
           <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-comm-inp" min="0" oninput="setExpField('comm', this.value)"></div>
         </div>
         <div class="exp-input-row">
-          <div class="exp-input-lbl">🚌 Транспорт</div>
+          <div class="exp-input-lbl" data-i18n="expTransport">🚌 Транспорт</div>
           <div class="exp-input-wrap"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-tran-inp" min="0" oninput="setExpField('transport', this.value)"></div>
         </div>
-        <div class="total-row"><div class="total-lbl">Базові витрати</div><div class="total-val red" id="basic-total">$0</div></div>
+        <div class="total-row"><div class="total-lbl" data-i18n="expBasicTotal">Базові витрати</div><div class="total-val red" id="basic-total">$0</div></div>
       </div>
 
-      <div class="sec-hdr" style="margin-top:4px"><div class="sec-title">Сім'я</div></div>
+      <div class="sec-hdr" style="margin-top:4px"><div class="sec-title" data-i18n="expFamilyTitle">Сім'я</div></div>
       <div class="fin-tbl">
         <div class="tog-row">
           <div style="display:flex;align-items:center;gap:10px;flex:1">
-            <div class="tog-lbl">💍 Партнер</div>
+            <div class="tog-lbl" data-i18n="expPartner">💍 Партнер</div>
             <div class="exp-input-wrap hidden" id="wife-inp-wrap" style="width:80px">
               <span class="exp-input-prefix">$</span>
               <input type="number" class="exp-input-field" id="wife-inp" min="0" oninput="setWifeExp(this.value)">
@@ -436,8 +452,8 @@
         </div>
         <div class="tog-row" style="border-bottom:none">
           <div>
-            <div class="tog-lbl">👶 Діти</div>
-            <div class="tog-sub">макс. 3 · витрати на дитину:</div>
+            <div class="tog-lbl" data-i18n="expKids">👶 Діти</div>
+            <div class="tog-sub" data-i18n="expKidsSub">макс. 3 · витрати на дитину:</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="exp-input-wrap" style="width:72px"><span class="exp-input-prefix">$</span><input type="number" class="exp-input-field" id="exp-kid-cost-inp" min="0" oninput="setExpField('kidCost', this.value)"></div>
@@ -448,88 +464,88 @@
             </div>
           </div>
         </div>
-        <div class="total-row"><div class="total-lbl">Витрати сім'ї</div><div class="total-val red" id="family-total">$0</div></div>
+        <div class="total-row"><div class="total-lbl" data-i18n="expFamilyTotal">Витрати сім'ї</div><div class="total-val red" id="family-total">$0</div></div>
       </div>
 
-      <div class="sec-hdr" style="margin-top:4px"><div class="sec-title">Кредити</div></div>
+      <div class="sec-hdr" style="margin-top:4px"><div class="sec-title" data-i18n="expLoansTitle">Кредити</div></div>
       <div class="loan-card">
         <div class="loan-hdr">
-          <div><div class="loan-name">🏦 Банк</div><div class="loan-rate">3% річних · 1 рік = 1 раунд</div></div>
-          <div class="loan-max">Ліміт: $3,000</div>
+          <div><div class="loan-name" data-i18n="expBankName">🏦 Банк</div><div class="loan-rate" data-i18n="expBankRate">3% річних · 1 рік = 1 раунд</div></div>
+          <div class="loan-max" data-i18n="expBankLimit">Ліміт: $3,000</div>
         </div>
         <div class="loan-stat-row">
-          <span class="loan-stat-lbl">Сума позик</span>
+          <span class="loan-stat-lbl" data-i18n="expLoanAmt">Сума позик</span>
           <span class="loan-stat-val mono" id="bank-amt-display">$0</span>
         </div>
         <div class="loan-stat-row">
-          <span class="loan-stat-lbl">Залишок боргу</span>
+          <span class="loan-stat-lbl" data-i18n="expLoanRem">Залишок боргу</span>
           <span class="loan-stat-val mono red" id="bank-rem-display">$0</span>
         </div>
         <div class="loan-stat-row highlight">
-          <span class="loan-stat-lbl">Доступний ліміт</span>
+          <span class="loan-stat-lbl" data-i18n="expLoanAvail">Доступний ліміт</span>
           <span class="loan-stat-val mono green" id="bank-avail-display">$3,000</span>
         </div>
         <div class="loan-footer">
-          <div><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="bank-pay">$0</div></div>
+          <div><div class="loan-pay-lbl" data-i18n="expLoanPay">Виплата за раунд</div><div class="loan-pay-val" id="bank-pay">$0</div></div>
           <div style="display:flex;gap:8px">
-            <button class="btn-repay" id="bank-repay-btn" onclick="openRepayModal('bank')">↓ Виплатити</button>
-            <button class="btn-borrow" id="bank-borrow-btn" onclick="openBorrowModal('bank')">+ Взяти позику</button>
+            <button class="btn-repay" id="bank-repay-btn" onclick="openRepayModal('bank')" data-i18n="expRepayBtn">↓ Виплатити</button>
+            <button class="btn-borrow" id="bank-borrow-btn" onclick="openBorrowModal('bank')" data-i18n="expBorrowBtn">+ Взяти позику</button>
           </div>
         </div>
       </div>
       <div class="loan-card">
         <div class="loan-hdr">
-          <div><div class="loan-name">💸 Мікрокредит</div><div class="loan-rate">30% річних · 1 рік = 1 раунд</div></div>
-          <div class="loan-max">Ліміт: $30,000</div>
+          <div><div class="loan-name" data-i18n="expMicroName">💸 Мікрокредит</div><div class="loan-rate" data-i18n="expMicroRate">30% річних · 1 рік = 1 раунд</div></div>
+          <div class="loan-max" data-i18n="expMicroLimit">Ліміт: $30,000</div>
         </div>
         <div class="loan-stat-row">
-          <span class="loan-stat-lbl">Сума позик</span>
+          <span class="loan-stat-lbl" data-i18n="expLoanAmt">Сума позик</span>
           <span class="loan-stat-val mono" id="micro-amt-display">$0</span>
         </div>
         <div class="loan-stat-row">
-          <span class="loan-stat-lbl">Залишок боргу</span>
+          <span class="loan-stat-lbl" data-i18n="expLoanRem">Залишок боргу</span>
           <span class="loan-stat-val mono red" id="micro-rem-display">$0</span>
         </div>
         <div class="loan-stat-row highlight">
-          <span class="loan-stat-lbl">Доступний ліміт</span>
+          <span class="loan-stat-lbl" data-i18n="expLoanAvail">Доступний ліміт</span>
           <span class="loan-stat-val mono green" id="micro-avail-display">$30,000</span>
         </div>
         <div class="loan-footer">
-          <div><div class="loan-pay-lbl">Виплата за раунд</div><div class="loan-pay-val" id="micro-pay">$0</div></div>
+          <div><div class="loan-pay-lbl" data-i18n="expLoanPay">Виплата за раунд</div><div class="loan-pay-val" id="micro-pay">$0</div></div>
           <div style="display:flex;gap:8px">
-            <button class="btn-repay" id="micro-repay-btn" onclick="openRepayModal('micro')">↓ Виплатити</button>
-            <button class="btn-borrow" id="micro-borrow-btn" onclick="openBorrowModal('micro')">+ Взяти позику</button>
+            <button class="btn-repay" id="micro-repay-btn" onclick="openRepayModal('micro')" data-i18n="expRepayBtn">↓ Виплатити</button>
+            <button class="btn-borrow" id="micro-borrow-btn" onclick="openBorrowModal('micro')" data-i18n="expBorrowBtn">+ Взяти позику</button>
           </div>
         </div>
       </div>
-      <div class="fin-tbl"><div class="total-row"><div class="total-lbl">Усього витрат</div><div class="total-val red" id="exp-grand">$0</div></div></div>
+      <div class="fin-tbl"><div class="total-row"><div class="total-lbl" data-i18n="expGrandTotal">Усього витрат</div><div class="total-val red" id="exp-grand">$0</div></div></div>
     </div>
 
     <!-- COURSES -->
     <div class="tab-pane hidden" id="pane-crs">
-      <div class="sec-hdr"><div class="sec-title">Курси</div><button class="btn-add" onclick="openAddCourseModal()">+ Додати</button></div>
-      <div class="info-badge">Курс збільшує <strong>Додаткову оплату</strong> у доходах де сфера збігається.</div>
+      <div class="sec-hdr"><div class="sec-title" data-i18n="crsTitle">Курси</div><button class="btn-add" onclick="openAddCourseModal()" data-i18n="crsAddBtn">+ Додати</button></div>
+      <div class="info-badge" data-i18n-html="crsInfo">Курс збільшує <strong>Додаткову оплату</strong> у доходах де сфера збігається.</div>
       <div class="gen-tbl">
-        <div class="crs-head gen-head"><div>Назва</div><div>Сфера</div><div style="text-align:right">+Дохід</div><div></div></div>
-        <div id="crs-rows"><div class="empty-msg">Курсів поки немає</div></div>
+        <div class="crs-head gen-head"><div data-i18n="crsHeadName">Назва</div><div data-i18n="crsHeadField">Сфера</div><div style="text-align:right" data-i18n="crsHeadPay">+Дохід</div><div></div></div>
+        <div id="crs-rows"><div class="empty-msg" data-i18n="crsEmpty">Курсів поки немає</div></div>
       </div>
     </div>
 
     <!-- TRAININGS -->
     <div class="tab-pane hidden" id="pane-trn">
-      <div class="sec-hdr"><div class="sec-title">Тренінги</div><button class="btn-add" onclick="openAddTrainingModal()">+ Додати</button></div>
-      <div class="info-badge">Тренінг збільшує <strong>Множник</strong> для відповідного типу доходу.</div>
+      <div class="sec-hdr"><div class="sec-title" data-i18n="trnTitle">Тренінги</div><button class="btn-add" onclick="openAddTrainingModal()" data-i18n="trnAddBtn">+ Додати</button></div>
+      <div class="info-badge" data-i18n-html="trnInfo">Тренінг збільшує <strong>Множник</strong> для відповідного типу доходу.</div>
       <div class="gen-tbl">
-        <div class="trn-head gen-head"><div>Назва</div><div style="text-align:right">Найм.</div><div style="text-align:right">На себе</div><div style="text-align:right">Бізнес</div><div></div></div>
-        <div id="trn-rows"><div class="empty-msg">Тренінгів поки немає</div></div>
+        <div class="trn-head gen-head"><div data-i18n="trnHeadName">Назва</div><div style="text-align:right" data-i18n="trnHeadEmp">Найм.</div><div style="text-align:right" data-i18n="trnHeadSelf">На себе</div><div style="text-align:right" data-i18n="trnHeadBiz">Бізнес</div><div></div></div>
+        <div id="trn-rows"><div class="empty-msg" data-i18n="trnEmpty">Тренінгів поки немає</div></div>
       </div>
     </div>
   </div>
 
   <div class="sum-bar">
-    <div class="sum-item inc"><div class="sum-label">Дохід</div><div class="sum-val" id="bar-inc">$0</div></div>
-    <div class="sum-item exp"><div class="sum-label">Витрати</div><div class="sum-val" id="bar-exp">$0</div></div>
-    <div class="sum-item bal"><div class="sum-label">Сальдо</div><div class="sum-val pos" id="bar-bal">$0</div></div>
+    <div class="sum-item inc"><div class="sum-label" data-i18n="barInc">Дохід</div><div class="sum-val" id="bar-inc">$0</div></div>
+    <div class="sum-item exp"><div class="sum-label" data-i18n="barExp">Витрати</div><div class="sum-val" id="bar-exp">$0</div></div>
+    <div class="sum-item bal"><div class="sum-label" data-i18n="barBal">Сальдо</div><div class="sum-val pos" id="bar-bal">$0</div></div>
   </div>
 </div>
 
@@ -537,23 +553,23 @@
 <!-- ══ MODALS ══ -->
 <div class="modal-overlay hidden" id="m-inc" onclick="overlayClose(event,'m-inc')">
   <div class="modal">
-    <div class="modal-title">Новий дохід</div>
-    <div class="info-badge hidden" id="mi-active-hint" style="color:var(--gold);border-color:rgba(245,166,35,0.3);background:var(--gold-dim)">⚠️ Під час навчання можна мати лише один активний дохід. Додавай пасивний.</div>
-    <div class="f-field"><label class="f-label">Назва</label><input type="text" class="f-input" id="mi-name" placeholder="напр. Зарплата" autocomplete="off"></div>
-    <div class="f-field"><label class="f-label">Тип доходу</label>
+    <div class="modal-title" data-i18n="mIncTitle">Новий дохід</div>
+    <div class="info-badge hidden" id="mi-active-hint" style="color:var(--gold);border-color:rgba(245,166,35,0.3);background:var(--gold-dim)" data-i18n="mIncActiveHint">⚠️ Під час навчання можна мати лише один активний дохід. Додавай пасивний.</div>
+    <div class="f-field"><label class="f-label" data-i18n="mIncNameLabel">Назва</label><input type="text" class="f-input" id="mi-name" data-i18n-ph="mIncNamePh" placeholder="напр. Зарплата" autocomplete="off"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mIncTypeLabel">Тип доходу</label>
       <select class="f-select" id="mi-type" onchange="onIncomeTypeChange(this.value)">
-        <option value="employee">Активний — Найманий (робота на дядю)</option>
-        <option value="self">Активний — На себе</option>
-        <option value="passive">Пасивний (стартап / бізнес)</option>
+        <option value="employee" data-i18n-opt="mIncTypeEmployee">Активний — Найманий (робота на дядю)</option>
+        <option value="self" data-i18n-opt="mIncTypeSelf">Активний — На себе</option>
+        <option value="passive" data-i18n-opt="mIncTypePassive">Пасивний (стартап / бізнес)</option>
       </select></div>
-    <div class="f-field"><label class="f-label">Базова оплата ($)</label><input type="number" class="f-input" id="mi-base" placeholder="0" min="0"></div>
-    <div class="f-field" id="mi-field-block"><label class="f-label">Сфера (для курсів)</label><input type="text" class="f-input" id="mi-field" placeholder="напр. Фінанси, IT, Медицина…" autocomplete="off"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mIncBaseLabel">Базова оплата ($)</label><input type="number" class="f-input" id="mi-base" placeholder="0" min="0"></div>
+    <div class="f-field" id="mi-field-block"><label class="f-label" data-i18n="mIncFieldLabel">Сфера (для курсів)</label><input type="text" class="f-input" id="mi-field" data-i18n-ph="mIncFieldPh" placeholder="напр. Фінанси, IT, Медицина…" autocomplete="off"></div>
     <div class="f-field hidden" id="mi-condition-block">
-      <label class="f-label">Умова для запуску (необов'язково)</label>
+      <label class="f-label" data-i18n="mIncCondLabel">Умова для запуску (необов'язково)</label>
       <select class="f-select" id="mi-condition-type" onchange="onConditionTypeChange(this.value)">
-        <option value="">— без умови —</option>
-        <option value="edu">Освіта</option>
-        <option value="exp">Досвід роботи у сфері</option>
+        <option value="" data-i18n-opt="mIncCondNone">— без умови —</option>
+        <option value="edu" data-i18n-opt="mIncCondEdu">Освіта</option>
+        <option value="exp" data-i18n-opt="mIncCondExp">Досвід роботи у сфері</option>
       </select>
       <div class="hidden" id="mi-condition-edu-block" style="margin-top:10px">
         <select class="f-select" id="mi-condition-edu">
@@ -583,31 +599,31 @@
         </select>
       </div>
     </div>
-    <button class="btn-primary" onclick="saveIncome()">Зберегти</button>
-    <button class="btn-cancel"  onclick="closeModal('m-inc')">Скасувати</button>
+    <button class="btn-primary" onclick="saveIncome()" data-i18n="save">Зберегти</button>
+    <button class="btn-cancel"  onclick="closeModal('m-inc')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="m-crs" onclick="overlayClose(event,'m-crs')">
   <div class="modal">
-    <div class="modal-title">Новий курс</div>
-    <div class="f-field"><label class="f-label">Назва курсу</label><input type="text" class="f-input" id="mc-name" placeholder="напр. Excel Advanced" autocomplete="off"></div>
-    <div class="f-field"><label class="f-label">Сфера застосування</label><input type="text" class="f-input" id="mc-field" placeholder="напр. Фінанси, IT…" autocomplete="off"></div>
-    <div class="f-field"><label class="f-label">Додаткова оплата ($)</label><input type="number" class="f-input" id="mc-pay" placeholder="0" min="0"></div>
-    <button class="btn-primary" onclick="saveCourse()">Зберегти</button>
-    <button class="btn-cancel"  onclick="closeModal('m-crs')">Скасувати</button>
+    <div class="modal-title" data-i18n="mCrsTitle">Новий курс</div>
+    <div class="f-field"><label class="f-label" data-i18n="mCrsNameLabel">Назва курсу</label><input type="text" class="f-input" id="mc-name" data-i18n-ph="mCrsNamePh" placeholder="напр. Excel Advanced" autocomplete="off"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mCrsFieldLabel">Сфера застосування</label><input type="text" class="f-input" id="mc-field" data-i18n-ph="mCrsFieldPh" placeholder="напр. Фінанси, IT…" autocomplete="off"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mCrsPayLabel">Додаткова оплата ($)</label><input type="number" class="f-input" id="mc-pay" placeholder="0" min="0"></div>
+    <button class="btn-primary" onclick="saveCourse()" data-i18n="save">Зберегти</button>
+    <button class="btn-cancel"  onclick="closeModal('m-crs')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="m-trn" onclick="overlayClose(event,'m-trn')">
   <div class="modal">
-    <div class="modal-title">Новий тренінг</div>
-    <div class="f-field"><label class="f-label">Назва тренінгу</label><input type="text" class="f-input" id="mt-name" placeholder="напр. Управління часом" autocomplete="off"></div>
-    <div class="f-field"><label class="f-label">Множник для найманця (×)</label><input type="number" class="f-input" id="mt-emp" placeholder="1.0" step="0.01" min="0"></div>
-    <div class="f-field"><label class="f-label">Множник для роботи на себе (×)</label><input type="number" class="f-input" id="mt-self" placeholder="1.0" step="0.01" min="0"></div>
-    <div class="f-field"><label class="f-label">Множник для бізнесу (×)</label><input type="number" class="f-input" id="mt-biz" placeholder="1.0" step="0.01" min="0"></div>
-    <button class="btn-primary" onclick="saveTraining()">Зберегти</button>
-    <button class="btn-cancel"  onclick="closeModal('m-trn')">Скасувати</button>
+    <div class="modal-title" data-i18n="mTrnTitle">Новий тренінг</div>
+    <div class="f-field"><label class="f-label" data-i18n="mTrnNameLabel">Назва тренінгу</label><input type="text" class="f-input" id="mt-name" data-i18n-ph="mTrnNamePh" placeholder="напр. Управління часом" autocomplete="off"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mTrnEmpLabel">Множник для найманця (×)</label><input type="number" class="f-input" id="mt-emp" placeholder="1.0" step="0.01" min="0"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mTrnSelfLabel">Множник для роботи на себе (×)</label><input type="number" class="f-input" id="mt-self" placeholder="1.0" step="0.01" min="0"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mTrnBizLabel">Множник для бізнесу (×)</label><input type="number" class="f-input" id="mt-biz" placeholder="1.0" step="0.01" min="0"></div>
+    <button class="btn-primary" onclick="saveTraining()" data-i18n="save">Зберегти</button>
+    <button class="btn-cancel"  onclick="closeModal('m-trn')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
@@ -616,21 +632,21 @@
     <div class="modal-title" id="er-title">Завершити Раунд 1</div>
     <div class="info-badge" id="er-badge">—</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin:4px 0 16px">
-      <div style="display:flex;justify-content:space-between;font-size:14px"><span class="sub">Поточна готівка:</span><span class="mono" id="er-cur">$500</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:14px"><span class="green">+ Доходи:</span><span class="mono green" id="er-inc">$0</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:14px"><span class="red">− Витрати:</span><span class="mono red" id="er-exp">$0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px"><span class="sub" data-i18n="mEndCurLabel">Поточна готівка:</span><span class="mono" id="er-cur">$500</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px"><span class="green" data-i18n="mEndIncLabel">+ Доходи:</span><span class="mono green" id="er-inc">$0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px"><span class="red" data-i18n="mEndExpLabel">− Витрати:</span><span class="mono red" id="er-exp">$0</span></div>
       <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:17px;font-weight:700">
-        <span>= Нова готівка:</span><span class="mono" id="er-new">$500</span>
+        <span data-i18n="mEndNewLabel">= Нова готівка:</span><span class="mono" id="er-new">$500</span>
       </div>
     </div>
-    <button class="btn-primary" onclick="confirmRound()">Підтвердити</button>
-    <button class="btn-cancel"  onclick="closeModal('m-end')">Скасувати</button>
+    <button class="btn-primary" onclick="confirmRound()" data-i18n="mEndConfirmBtn">Підтвердити</button>
+    <button class="btn-cancel"  onclick="closeModal('m-end')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="m-debt">
   <div class="modal">
-    <div class="modal-title">💸 Бракує коштів</div>
+    <div class="modal-title" data-i18n="mDebtTitle">💸 Бракує коштів</div>
     <div id="debt-info" style="font-family:var(--mono);font-size:13px;line-height:2;background:var(--elevated);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;color:var(--sub)"></div>
     <div id="debt-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px"></div>
   </div>
@@ -641,15 +657,15 @@
     <div class="modal-title" id="borrow-title">Взяти позику</div>
     <div class="info-badge" id="borrow-info">—</div>
     <div class="f-field">
-      <label class="f-label">Сума позики ($)</label>
+      <label class="f-label" data-i18n="mBorrowAmtLabel">Сума позики ($)</label>
       <input type="number" class="f-input" id="borrow-amount" placeholder="0" min="1" oninput="onBorrowInput(this.value)">
     </div>
     <div style="display:flex;justify-content:space-between;padding:4px 0 12px;font-size:13px">
-      <span class="sub">Виплата відсотків за раунд:</span>
+      <span class="sub" data-i18n="mBorrowInterestLabel">Виплата відсотків за раунд:</span>
       <span class="mono gold" id="borrow-interest-preview">$0</span>
     </div>
-    <button class="btn-primary" id="borrow-confirm-btn" onclick="confirmBorrow()">Взяти позику</button>
-    <button class="btn-cancel" onclick="closeModal('m-borrow')">Скасувати</button>
+    <button class="btn-primary" id="borrow-confirm-btn" onclick="confirmBorrow()" data-i18n="mBorrowConfirmBtn">Взяти позику</button>
+    <button class="btn-cancel" onclick="closeModal('m-borrow')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
@@ -658,60 +674,60 @@
     <div class="modal-title" id="repay-title">Погасити борг</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;font-size:13px">
-        <span class="sub">Поточний борг:</span>
+        <span class="sub" data-i18n="mRepayDebtLabel">Поточний борг:</span>
         <span class="mono red" id="repay-current-debt">$0</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
-        <span class="sub">Ваша готівка:</span>
+        <span class="sub" data-i18n="mRepayCashLabel">Ваша готівка:</span>
         <span class="mono gold" id="repay-cash-available">$0</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
-        <span class="sub">Відсотки після погашення:</span>
+        <span class="sub" data-i18n="mRepayInterestLabel">Відсотки після погашення:</span>
         <span class="mono green" id="repay-interest-after">$0</span>
       </div>
     </div>
     <div class="f-field">
-      <label class="f-label">Сума погашення ($)</label>
+      <label class="f-label" data-i18n="mRepayAmtLabel">Сума погашення ($)</label>
       <input type="number" class="f-input" id="repay-amount" placeholder="0" min="1" oninput="onRepayInput(this.value)">
     </div>
     <div id="repay-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:8px 12px;background:var(--red-dim);border-radius:8px"></div>
-    <button class="btn-primary" id="repay-confirm-btn" onclick="confirmRepay()">Погасити</button>
-    <button class="btn-cancel" onclick="closeModal('m-repay')">Скасувати</button>
+    <button class="btn-primary" id="repay-confirm-btn" onclick="confirmRepay()" data-i18n="mRepayConfirmBtn">Погасити</button>
+    <button class="btn-cancel" onclick="closeModal('m-repay')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="m-bankrupt">
   <div class="modal">
-    <div class="modal-title" style="color:var(--red)">💀 Банкрутство</div>
+    <div class="modal-title" style="color:var(--red)" data-i18n="mBankruptTitle">💀 Банкрутство</div>
     <div id="bankrupt-info" style="font-family:var(--mono);font-size:13px;line-height:2;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;color:var(--sub)"></div>
-    <button class="btn-primary" style="background:var(--red);color:#fff" onclick="localStorage.clear();location.reload()">🔄 Почати нову гру</button>
+    <button class="btn-primary" style="background:var(--red);color:#fff" onclick="localStorage.clear();location.reload()" data-i18n="mBankruptNewGame">🔄 Почати нову гру</button>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="m-start-study" onclick="overlayClose(event,'m-start-study')">
   <div class="modal">
-    <div class="modal-title">Почати навчання</div>
-    <div class="card-label" style="margin-bottom:10px">Оберіть заклад</div>
+    <div class="modal-title" data-i18n="mStudyTitle">Почати навчання</div>
+    <div class="card-label" style="margin-bottom:10px" data-i18n="mStudyPickLabel">Оберіть заклад</div>
     <div class="choice-grid" style="margin-bottom:14px">
       <div class="choice-btn" id="ss-btn-uni" onclick="ssPickType('university')">
         <div class="icon">🎓</div>
-        <div class="lbl">Університет</div>
-        <div class="sub-lbl">8 раундів</div>
-        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+        <div class="lbl" data-i18n="mStudyUniName">Університет</div>
+        <div class="sub-lbl" data-i18n="mStudyUniRounds">8 раундів</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px" data-i18n="setupEduStipend">Стипендія $30</div>
       </div>
       <div class="choice-btn" id="ss-btn-col" onclick="ssPickType('college')">
         <div class="icon">🔧</div>
-        <div class="lbl">Технікум</div>
-        <div class="sub-lbl">4 раунди</div>
-        <div class="sub-lbl" style="color:var(--green);margin-top:2px">Стипендія $30</div>
+        <div class="lbl" data-i18n="mStudyColName">Технікум</div>
+        <div class="sub-lbl" data-i18n="mStudyColRounds">4 раунди</div>
+        <div class="sub-lbl" style="color:var(--green);margin-top:2px" data-i18n="setupEduStipend">Стипендія $30</div>
       </div>
     </div>
-    <div class="card-label" style="margin-bottom:8px" id="ss-spec-label">Спеціальність</div>
+    <div class="card-label" style="margin-bottom:8px" id="ss-spec-label" data-i18n="mStudySpecLabel">Спеціальність</div>
     <div class="spec-list" id="ss-spec-list">
-      <div class="empty-msg">Спочатку оберіть заклад</div>
+      <div class="empty-msg" data-i18n="mStudySpecPick">Спочатку оберіть заклад</div>
     </div>
-    <button class="btn-primary" style="margin-top:16px" onclick="confirmStartStudy()">Розпочати навчання</button>
-    <button class="btn-cancel" onclick="closeModal('m-start-study')">Скасувати</button>
+    <button class="btn-primary" style="margin-top:16px" onclick="confirmStartStudy()" data-i18n="mStudyConfirmBtn">Розпочати навчання</button>
+    <button class="btn-cancel" onclick="closeModal('m-start-study')" data-i18n="cancel">Скасувати</button>
   </div>
 </div>
 
@@ -719,14 +735,14 @@
   <div class="modal" style="max-height:70vh">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
-        <div class="modal-title" id="mult-modal-title" style="margin-bottom:2px">Множник доходу</div>
+        <div class="modal-title" id="mult-modal-title" style="margin-bottom:2px" data-i18n="mMultTitle">Множник доходу</div>
         <div style="font-size:12px;color:var(--sub)" id="mult-modal-sub">—</div>
       </div>
       <div style="font-family:var(--mono);font-size:28px;font-weight:600;color:var(--gold)" id="mult-modal-total">×1.00</div>
     </div>
     <div id="mult-breakdown-list"></div>
     <div style="background:var(--elevated);border-radius:10px;padding:11px 14px;margin-top:12px;font-size:12px;color:var(--sub);line-height:1.6" id="mult-formula-block"></div>
-    <button class="btn-cancel" style="margin-top:12px" onclick="closeModal('m-mult')">Закрити</button>
+    <button class="btn-cancel" style="margin-top:12px" onclick="closeModal('m-mult')" data-i18n="close">Закрити</button>
   </div>
 </div>
 
@@ -768,10 +784,10 @@ function onRoomInput(v) {
   const el=document.getElementById('sync-badge');
   if(v.trim().length>=4){
     el.className='sync-badge ok';
-    el.innerHTML='<div class="sync-dot pulse"></div><span>Кімната <strong>#'+v.trim().toUpperCase()+'</strong> — підключиться після старту</span>';
+    el.innerHTML=`<div class="sync-dot pulse"></div><span>${L('setupRoomSyncOn', v.trim().toUpperCase())}</span>`;
   } else {
     el.className='sync-badge off';
-    el.innerHTML='<div class="sync-dot"></div><span>Введи код → синхронізація з ведучим</span>';
+    el.innerHTML=`<div class="sync-dot"></div><span data-i18n="setupRoomSyncOff">${L('setupRoomSyncOff')}</span>`;
   }
 }
 
@@ -784,7 +800,7 @@ function pickEdu(type){
   const sc=document.getElementById('card-spec');
   if(type==='none'){sc.classList.add('hidden');return;}
   sc.classList.remove('hidden');
-  document.getElementById('spec-label').textContent=type==='university'?'Спеціальність (університет)':'Спеціальність (технікум)';
+  document.getElementById('spec-label').textContent=type==='university'?L('setupSpecUni'):L('setupSpecCol');
   _setupSpec=null;
   document.getElementById('spec-list').innerHTML=(type==='university'?UNI_SPECS:COL_SPECS).map(s=>
     `<div class="spec-item" id="si-${s.id}" onclick="pickSpec('${s.id}')"><span>${s.icon}</span><span>${s.name}</span></div>`
@@ -800,9 +816,9 @@ function pickSpec(id){
 function startGame(){
   const name=document.getElementById('inp-name').value.trim();
   const room=document.getElementById('inp-room').value.trim().toUpperCase();
-  if(!name){alert("Введіть ваше ім'я!");return;}
-  if(!_setupEdu){alert('Оберіть тип освіти!');return;}
-  if(_setupEdu!=='none'&&!_setupSpec){alert('Оберіть спеціальність!');return;}
+  if(!name){alert(L('alertEnterName'));return;}
+  if(!_setupEdu){alert(L('alertPickEdu'));return;}
+  if(_setupEdu!=='none'&&!_setupSpec){alert(L('alertPickSpec'));return;}
   S.playerName=name; S.roomCode=room;
   S.educations=[];
   if(_setupEdu!=='none'){
@@ -841,7 +857,7 @@ function fmtS(n){ return (n>=0?'+':'−')+fmt(n); }
 function renderAll(){ renderHdr(); renderBar(); const t=S.tab; if(t==='ov')rOv(); if(t==='inc')rInc(); if(t==='exp')rExp(); if(t==='crs')rCrs(); if(t==='trn')rTrn(); }
 function renderHdr(){
   document.getElementById('hdr-name').textContent=S.playerName;
-  document.getElementById('hdr-round').textContent='Раунд '+S.round;
+  document.getElementById('hdr-round').textContent=L('hdrRoundBadge',S.round);
   document.getElementById('hdr-cash').textContent=fmt(S.cash);
   const rp=document.getElementById('hdr-room');
   if(S.roomCode){rp.textContent='#'+S.roomCode;rp.classList.remove('hidden');}
@@ -851,7 +867,7 @@ function renderHdr(){
   const badgeValEl=document.getElementById('hdr-passive-val');
   if(passive>0){
     badgeEl.style.display='inline-flex';
-    badgeValEl.textContent='Пасив '+fmt(passive);
+    badgeValEl.textContent=L('hdrPassiveText',fmt(passive));
     badgeEl.classList.remove('near-goal','goal-reached');
     if(passive>=30000){badgeEl.classList.add('goal-reached');}
     else if(passive>=20000){badgeEl.classList.add('near-goal');}
@@ -865,13 +881,13 @@ function showPassiveInfo(){
   const pct=Math.min(100,(passive/goal*100)).toFixed(0);
   const needed=Math.max(0,goal-passive);
   const passiveIncomes=S.incomes.filter(i=>i.type==='passive');
-  const list=passiveIncomes.length?passiveIncomes.map(i=>`• ${i.name}: ${fmt(fi(i))}/раунд`).join('\n'):'• немає пасивних доходів';
-  alert(`Пасивний дохід: ${fmt(passive)}/раунд\nЦіль (Раунд 2): ${fmt(goal)}\nПрогрес: ${pct}%\n`+(needed>0?`Ще потрібно: ${fmt(needed)}\n`:`✅ Ціль досягнута!\n`)+`\n${list}`);
+  const list=passiveIncomes.length?passiveIncomes.map(i=>L('passiveInfoItem',i.name,fmt(fi(i)))).join('\n'):L('passiveInfoEmpty');
+  alert(L('passiveInfo',fmt(passive),fmt(goal),pct,needed,list));
 }
 function showMultBreakdown(incId){
   const inc=S.incomes.find(i=>i.id===incId);
   if(!inc)return;
-  const typeLbl={employee:'Найманий',self:'На себе',passive:'Пасивний',stipend:'Стипендія'};
+  const typeLbl={employee:L('incTypeEmployee'),self:L('incTypeSelf'),passive:L('incTypePassive'),stipend:L('incTypeStipend')};
   document.getElementById('mult-modal-title').textContent=inc.name;
   document.getElementById('mult-modal-sub').textContent=(typeLbl[inc.type]||inc.type)+(inc.field?' · '+inc.field:'');
   const mKey=inc.type==='employee'?'mEmp':inc.type==='self'?'mSelf':inc.type==='passive'?'mBiz':null;
@@ -881,21 +897,21 @@ function showMultBreakdown(incId){
   const listEl=document.getElementById('mult-breakdown-list');
   const formulaBlock=document.getElementById('mult-formula-block');
   if(relevant.length===0){
-    listEl.innerHTML='<div style="text-align:center;padding:20px 0;color:var(--sub);font-size:13px">Немає активних тренінгів для цього типу доходу</div>';
+    listEl.innerHTML=`<div style="text-align:center;padding:20px 0;color:var(--sub);font-size:13px">${L('mMultEmpty')}</div>`;
     formulaBlock.style.display='none';
     document.getElementById('mult-modal-total').textContent='×1.00';
     openModal('m-mult');return;
   }
   const bonuses=relevant.map(t=>{const v=parseFloat(t[mKey])||1;return{name:t.name,val:v,bonus:v-1};});
   listEl.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:4px">
-    <div style="display:grid;grid-template-columns:1fr 60px 60px;padding:8px 14px;background:var(--elevated);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);border-bottom:1px solid var(--border)"><div>Тренінг</div><div style="text-align:right">Значення</div><div style="text-align:right">Бонус</div></div>
+    <div style="display:grid;grid-template-columns:1fr 60px 60px;padding:8px 14px;background:var(--elevated);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);border-bottom:1px solid var(--border)"><div>${L('mMultHeadTrn')}</div><div style="text-align:right">${L('mMultHeadVal')}</div><div style="text-align:right">${L('mMultHeadBonus')}</div></div>
     ${bonuses.map(b=>`<div style="display:grid;grid-template-columns:1fr 60px 60px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center"><div style="font-size:13px;font-weight:500">${b.name}</div><div style="text-align:right;font-family:var(--mono);font-size:13px;color:var(--sub)">×${b.val.toFixed(2)}</div><div style="text-align:right;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--gold)">+${b.bonus.toFixed(2)}</div></div>`).join('')}
-    <div style="display:grid;grid-template-columns:1fr 60px 60px;padding:10px 14px;background:var(--elevated);align-items:center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--sub)">Разом</div><div></div><div style="text-align:right;font-family:var(--mono);font-size:16px;font-weight:600;color:var(--gold)">×${totalMult.toFixed(2)}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 60px 60px;padding:10px 14px;background:var(--elevated);align-items:center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--sub)">${L('mMultTotal')}</div><div></div><div style="text-align:right;font-family:var(--mono);font-size:16px;font-weight:600;color:var(--gold)">×${totalMult.toFixed(2)}</div></div>
   </div>`;
   formulaBlock.style.display='block';
   const bonusStr=bonuses.map(b=>'+'+b.bonus.toFixed(2)).join(' ');
   const totalBonus=(totalMult-1).toFixed(2);
-  formulaBlock.innerHTML=`<strong style="color:var(--text)">Формула:</strong> 1 ${bonusStr} = 1 + ${totalBonus} = ×${totalMult.toFixed(2)}<br><span style="margin-top:4px;display:block">База ${fmt(parseFloat(inc.basePay)||0)} × ${totalMult.toFixed(2)} = <strong style="color:var(--green)">${fmt((parseFloat(inc.basePay)||0)*totalMult)}</strong></span>`;
+  formulaBlock.innerHTML=`<strong style="color:var(--text)">${L('mMultFormula')}</strong> 1 ${bonusStr} = 1 + ${totalBonus} = ×${totalMult.toFixed(2)}<br><span style="margin-top:4px;display:block">${L('mMultBase',fmt(parseFloat(inc.basePay)||0),totalMult.toFixed(2),fmt((parseFloat(inc.basePay)||0)*totalMult))}</span>`;
   openModal('m-mult');
 }
 function renderBar(){
@@ -917,23 +933,23 @@ function rOv(){
   const displayEdu=firstActive||firstCompleted;
   if(displayEdu){
     ic.textContent=displayEdu.type==='university'?'🎓':'🔧';
-    tx.textContent=(displayEdu.type==='university'?'Університет':'Технікум')+' · '+(displayEdu.specialty?.name??'—');
-    if(!displayEdu.completed&&displayEdu.roundsLeft>0){const done=displayEdu.roundsTotal-displayEdu.roundsLeft;sb.textContent='Раунд '+done+'/'+displayEdu.roundsTotal;}
-    else if(displayEdu.completed){sb.textContent='✅ Диплом отримано';}
-    else{sb.textContent='Навчання завершено — отримай диплом';}
+    tx.textContent=(displayEdu.type==='university'?L('ovEduUni'):L('ovEduCol'))+' · '+(displayEdu.specialty?.name??'—');
+    if(!displayEdu.completed&&displayEdu.roundsLeft>0){const done=displayEdu.roundsTotal-displayEdu.roundsLeft;sb.textContent=L('ovEduProgress',done,displayEdu.roundsTotal);}
+    else if(displayEdu.completed){sb.textContent=L('ovEduDiploma');}
+    else{sb.textContent=L('ovEduDiploma');}
   } else {
-    ic.textContent='🚶';tx.textContent='Без освіти';sb.textContent='Навчання не розпочато';
+    ic.textContent='🚶';tx.textContent=L('ovEduNone');sb.textContent=L('ovEduNoneSub');
   }
   renderStudyButtons();
 }
 function rInc(){
   const wrap=document.getElementById('inc-wrap');
-  if(!S.incomes.length){wrap.innerHTML='<div class="fin-tbl"><div class="empty-msg">Доходів поки немає</div></div>';document.getElementById('inc-total').textContent=fmt(0);return;}
-  const head='<div class="inc-head"><div>Назва / Тип</div><div class="col-r">База</div><div class="col-r">Кратн.</div><div class="col-r">Дод.</div><div class="col-r">Підсум.</div><div></div></div>';
+  if(!S.incomes.length){wrap.innerHTML=`<div class="fin-tbl"><div class="empty-msg">${L('incEmpty')}</div></div>`;document.getElementById('inc-total').textContent=fmt(0);return;}
+  const head=`<div class="inc-head"><div>${L('incHeadName')}</div><div class="col-r">${L('incHeadBase')}</div><div class="col-r">${L('incHeadMult')}</div><div class="col-r">${L('incHeadExtra')}</div><div class="col-r">${L('incHeadFinal')}</div><div></div></div>`;
   function buildRow(inc){
     const ap=addPay(inc),mx=mult(inc),f=fi(inc);
-    let sub=inc.type==='employee'||inc.type==='self'?'Активний':inc.type==='stipend'?'Стипендія':'Пасивний';
-    if(inc.type==='passive'&&inc.condition){sub+=' · Умова: '+inc.condition.label;}
+    let sub=inc.type==='employee'||inc.type==='self'?L('incTypeEmployee'):inc.type==='stipend'?L('incTypeStipend'):L('incTypePassive');
+    if(inc.type==='passive'&&inc.condition){sub+=L('incCondPrefix')+inc.condition.label;}
     else if(inc.type!=='passive'&&inc.field){sub+=' · '+inc.field;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
     const multEl=mx>1?`<div class="col-r"><span class="mult-link" onclick="showMultBreakdown('${inc.id}')">×${mx.toFixed(2)}</span></div>`:`<div class="col-r sub">×${mx.toFixed(2)}</div>`;
@@ -941,13 +957,13 @@ function rInc(){
   }
   const active=S.incomes.filter(i=>i.type==='employee'||i.type==='self'||i.type==='stipend');
   const passive=S.incomes.filter(i=>i.type==='passive');
-  let html=`<div class="fin-tbl">${head}${active.length?active.map(buildRow).join(''):'<div class="empty-msg" style="font-size:12px;padding:12px">Активних доходів немає</div>'}</div>`;
+  let html=`<div class="fin-tbl">${head}${active.length?active.map(buildRow).join(''):`<div class="empty-msg" style="font-size:12px;padding:12px">${L('incActiveEmpty')}</div>`}</div>`;
   if(passive.length){html+=`<div class="fin-tbl" style="margin-top:10px">${passive.map(buildRow).join('')}</div>`;}
   wrap.innerHTML=html;
   document.getElementById('inc-total').textContent=fmt(totalInc());
 }
 function rExp(){
-  document.getElementById('exp-h-lbl').textContent=S.exp.housingLabel;
+  document.getElementById('exp-h-lbl').textContent=S.exp.housingLabel==='Квартира'?L('housingApt'):L('housingDorm');
   const sync=(id,val)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=parseFloat(val)>=0?parseFloat(val):0;};
   sync('exp-h-inp',S.exp.housingBase);
   sync('exp-food-inp',S.exp.food);
@@ -974,12 +990,12 @@ function rExp(){
 }
 function rCrs(){
   const el=document.getElementById('crs-rows');
-  if(!S.courses.length){el.innerHTML='<div class="empty-msg">Курсів поки немає</div>';return;}
+  if(!S.courses.length){el.innerHTML=`<div class="empty-msg">${L('crsEmpty')}</div>`;return;}
   el.innerHTML=S.courses.map(c=>`<div class="crs-row"><div>${c.name}</div><div class="sub" style="font-size:12px">${c.field}</div><div class="col-r gold">+$${(parseFloat(c.pay)||0).toFixed(0)}</div><button class="btn-del" onclick="delCourse('${c.id}')">✕</button></div>`).join('');
 }
 function rTrn(){
   const el=document.getElementById('trn-rows');
-  if(!S.trainings.length){el.innerHTML='<div class="empty-msg">Тренінгів поки немає</div>';return;}
+  if(!S.trainings.length){el.innerHTML=`<div class="empty-msg">${L('trnEmpty')}</div>`;return;}
   el.innerHTML=S.trainings.map(t=>`<div class="trn-row"><div>${t.name}</div><div class="col-r gold">×${(parseFloat(t.mEmp)||1).toFixed(2)}</div><div class="col-r gold">×${(parseFloat(t.mSelf)||1).toFixed(2)}</div><div class="col-r gold">×${(parseFloat(t.mBiz)||1).toFixed(2)}</div><button class="btn-del" onclick="delTraining('${t.id}')">✕</button></div>`).join('');
 }
 
@@ -1016,14 +1032,14 @@ function openBorrowModal(source){
   const avail=limit-rem;
   const rate=isBank?0.03:0.30;
   const name=isBank?'🏦 Банк':'💸 Мікрокредит';
-  document.getElementById('borrow-title').textContent='Позика · '+name;
-  document.getElementById('borrow-info').innerHTML=`Доступний ліміт: <strong>$${avail.toFixed(0)}</strong> · Ставка: <strong>${(rate*100).toFixed(0)}% / раунд</strong>`;
+  document.getElementById('borrow-title').textContent=L('mBorrowTitle',name);
+  document.getElementById('borrow-info').innerHTML=L('mBorrowInfo',avail.toFixed(0),(rate*100).toFixed(0));
   document.getElementById('borrow-amount').value='';
   document.getElementById('borrow-amount').max=avail;
   document.getElementById('borrow-interest-preview').textContent='$0';
   const btn=document.getElementById('borrow-confirm-btn');
-  if(avail<=0){btn.disabled=true;btn.textContent='Ліміт вичерпано';}
-  else{btn.disabled=false;btn.textContent='Взяти позику';}
+  if(avail<=0){btn.disabled=true;btn.textContent=L('mBorrowLimitBtn');}
+  else{btn.disabled=false;btn.textContent=L('mBorrowConfirmBtn');}
   openModal('m-borrow');
 }
 function onBorrowInput(val){
@@ -1038,7 +1054,7 @@ function confirmBorrow(){
   const rem=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
   const avail=limit-rem;
   const amount=Math.min(parseFloat(document.getElementById('borrow-amount').value)||0,avail);
-  if(amount<=0){alert('Введіть суму позики');return;}
+  if(amount<=0){alert(L('alertEnterAmt'));return;}
   if(isBank){S.loans.bankAmt=(S.loans.bankAmt||0)+amount;S.loans.bankRem=(S.loans.bankRem||0)+amount;}
   else{S.loans.microAmt=(S.loans.microAmt||0)+amount;S.loans.microRem=(S.loans.microRem||0)+amount;}
   S.cash+=amount;
@@ -1051,15 +1067,15 @@ function openRepayModal(source){
   const debt=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
   const rate=isBank?0.03:0.30;
   const name=isBank?'🏦 Банк':'💸 Мікрокредит';
-  document.getElementById('repay-title').textContent='Погасити · '+name;
+  document.getElementById('repay-title').textContent=L('mRepayTitle',name);
   document.getElementById('repay-current-debt').textContent='$'+debt.toFixed(0);
   document.getElementById('repay-cash-available').textContent='$'+(S.cash||0).toFixed(0);
   document.getElementById('repay-interest-after').textContent='$'+(debt*rate).toFixed(2);
   document.getElementById('repay-amount').value='';
   document.getElementById('repay-error').style.display='none';
   const btn=document.getElementById('repay-confirm-btn');
-  if(debt<=0){btn.disabled=true;btn.textContent='Борг відсутній';}
-  else{btn.disabled=false;btn.textContent='Погасити';}
+  if(debt<=0){btn.disabled=true;btn.textContent=L('mRepayNoDebtBtn');}
+  else{btn.disabled=false;btn.textContent=L('mRepayConfirmBtn');}
   openModal('m-repay');
 }
 function onRepayInput(val){
@@ -1078,8 +1094,8 @@ function confirmRepay(){
   const cash=S.cash||0;
   const entered=parseFloat(document.getElementById('repay-amount').value)||0;
   const errEl=document.getElementById('repay-error');
-  if(entered>cash){errEl.textContent='❌ Недостатньо готівки. Доступно: $'+cash.toFixed(0);errEl.style.display='block';return;}
-  if(entered<=0){errEl.textContent='❌ Введіть суму для погашення';errEl.style.display='block';return;}
+  if(entered>cash){errEl.textContent=L('mRepayErrInsuf',cash.toFixed(0));errEl.style.display='block';return;}
+  if(entered<=0){errEl.textContent=L('mRepayErrZero');errEl.style.display='block';return;}
   const actualRepay=Math.min(entered,debt);
   S.cash-=actualRepay;
   if(isBank){S.loans.bankRem=Math.max(0,debt-actualRepay);if(S.loans.bankRem===0)S.loans.bankAmt=0;}
@@ -1102,7 +1118,7 @@ function openAddIncomeModal(){
   const hint=document.getElementById('mi-active-hint');
   if(hint){
     hint.classList.toggle('hidden',!limitReached);
-    if(limitReached)hint.textContent='⚠️ Досягнуто ліміт активних доходів (2). Можна додати лише пасивний.';
+    if(limitReached)hint.textContent=L('mIncActiveLimitHint',2);
   }
   onIncomeTypeChange(sel.value);
   openModal('m-inc');
@@ -1122,7 +1138,7 @@ function onConditionTypeChange(val){
 function dropOutStudy(eduId){
   const edu=(S.educations||[]).find(e=>e.id===eduId);
   if(!edu)return;
-  if(!confirm('Закинути навчання "'+( edu.specialty?.name??'')+'"?\nСтипендія зникне. Диплому не буде.'))return;
+  if(!confirm(L('alertDropStudy', edu.specialty?.name??'')))return;
   S.incomes=S.incomes.filter(i=>i.id!==edu.stipendId);
   S.educations=S.educations.filter(e=>e.id!==eduId);
   if(activeStudies().length===0){S.exp.housingLabel='Квартира';S.exp.housingBase=200;S.exp.transport=40;}
@@ -1134,7 +1150,7 @@ function graduateStudy(eduId){
   edu.completed=true;edu.roundsLeft=0;
   S.incomes=S.incomes.filter(i=>i.id!==edu.stipendId);
   if(activeStudies().length===0){S.exp.housingLabel='Квартира';S.exp.housingBase=200;S.exp.transport=40;}
-  alert('🎓 Вітаємо! Диплом "'+( edu.specialty?.name??'')+'" отримано!');
+  alert(L('alertGraduate', edu.specialty?.name??''));
   save();fbSync();renderAll();
 }
 function renderStudyButtons(){
@@ -1144,16 +1160,16 @@ function renderStudyButtons(){
   const canAddMore=activeIncomeCount()<2;
   let html='';
   if(active.length===0){
-    html=`<button class="btn-round" onclick="openStartStudyModal()" style="color:var(--gold);border-color:rgba(245,166,35,0.4)">📚 Почати навчання</button>`;
+    html=`<button class="btn-round" onclick="openStartStudyModal()" style="color:var(--gold);border-color:rgba(245,166,35,0.4)">${L('ovStudyStartBtn')}</button>`;
   } else {
     html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
     active.forEach(edu=>{
-      const label=edu.roundsLeft>0?`Закинути: ${edu.specialty?.name??''} (${edu.roundsLeft} р.)`:`🎓 Диплом: ${edu.specialty?.name??''}`;
+      const label=edu.roundsLeft>0?L('ovStudyDropBtn',edu.specialty?.name??'',edu.roundsLeft):L('ovStudyGradBtn',edu.specialty?.name??'');
       const color=edu.roundsLeft>0?'color:var(--red);border-color:rgba(239,68,68,0.4)':'color:var(--green);border-color:rgba(34,197,94,0.4)';
       const fn=edu.roundsLeft>0?`dropOutStudy('${edu.id}')`:`graduateStudy('${edu.id}')`;
       html+=`<button class="btn-round" onclick="${fn}" style="font-size:12px;${color}">${label}</button>`;
     });
-    if(canAddMore){html+=`<button class="btn-round" onclick="openStartStudyModal()" style="font-size:12px;color:var(--gold);border-color:rgba(245,166,35,0.4)">📚 Почати навчання</button>`;}
+    if(canAddMore){html+=`<button class="btn-round" onclick="openStartStudyModal()" style="font-size:12px;color:var(--gold);border-color:rgba(245,166,35,0.4)">${L('ovStudyStartBtn')}</button>`;}
     html+='</div>';
   }
   const completed=completedStudies();
@@ -1166,7 +1182,7 @@ function renderStudyButtons(){
 }
 let _ssType=null,_ssSpec=null;
 function openStartStudyModal(){
-  if(activeIncomeCount()>=2){alert('Немає вільного слоту для активного доходу.\nСпочатку звільни місце (видали дохід або отримай/закинь навчання).');return;}
+  if(activeIncomeCount()>=2){alert(L('alertNoSlot'));return;}
   _ssType=null;_ssSpec=null;
   ['ss-btn-uni','ss-btn-col'].forEach(id=>document.getElementById(id)?.classList.remove('sel'));
   document.getElementById('ss-spec-list').innerHTML='<div class="empty-msg">Спочатку оберіть заклад</div>';
@@ -1177,7 +1193,7 @@ function ssPickType(type){
   document.getElementById('ss-btn-uni').classList.toggle('sel',type==='university');
   document.getElementById('ss-btn-col').classList.toggle('sel',type==='college');
   const specs=type==='university'?UNI_SPECS:COL_SPECS;
-  document.getElementById('ss-spec-label').textContent=type==='university'?'Спеціальність (університет)':'Спеціальність (технікум)';
+  document.getElementById('ss-spec-label').textContent=type==='university'?L('setupSpecUni'):L('setupSpecCol');
   document.getElementById('ss-spec-list').innerHTML=specs.map(s=>`<div class="spec-item" id="ss-si-${s.id}" onclick="ssPickSpec('${s.id}')"><span>${s.icon}</span><span>${s.name}</span></div>`).join('');
 }
 function ssPickSpec(id){
@@ -1186,13 +1202,13 @@ function ssPickSpec(id){
   document.getElementById('ss-si-'+id)?.classList.add('sel');
 }
 function confirmStartStudy(){
-  if(!_ssType){alert('Оберіть заклад!');return;}
-  if(!_ssSpec){alert('Оберіть спеціальність!');return;}
-  if(activeIncomeCount()>=2){alert('Немає вільного слоту для активного доходу.');return;}
+  if(!_ssType){alert(L('alertPickInstitution'));return;}
+  if(!_ssSpec){alert(L('alertPickSpec2'));return;}
+  if(activeIncomeCount()>=2){alert(L('alertNoSlotSimple'));return;}
   const allSpecs=[...UNI_SPECS,...COL_SPECS];
   const spec=allSpecs.find(s=>s.id===_ssSpec);
   const alreadyStudying=(S.educations||[]).some(e=>!e.completed&&e.specialty?.id===_ssSpec);
-  if(alreadyStudying){alert('Ця спеціальність вже є в активному навчанні.');return;}
+  if(alreadyStudying){alert(L('alertAlreadyStudying'));return;}
   const rounds=_ssType==='university'?8:4;
   const stipId='stip_'+Date.now();
   const eduId='edu_'+Date.now();
@@ -1205,9 +1221,9 @@ function confirmStartStudy(){
 }
 function saveIncome(){
   const n=document.getElementById('mi-name').value.trim();
-  if(!n){alert('Введіть назву!');return;}
+  if(!n){alert(L('alertEnterName2'));return;}
   const type=document.getElementById('mi-type').value;
-  if((type==='employee'||type==='self')&&activeIncomeCount()>=2){alert('Досягнуто ліміт: максимум 2 активних доходи (Найманий / На себе / Стипендія).');return;}
+  if((type==='employee'||type==='self')&&activeIncomeCount()>=2){alert(L('alertIncomeLimit'));return;}
   const inc={id:'i'+Date.now(),type,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim(),condition:null};
   if(type==='passive'){
     inc.field='';
@@ -1219,7 +1235,7 @@ function saveIncome(){
 }
 function delIncome(id){
   const income=S.incomes.find(i=>i.id===id);
-  if(income&&income._protected){alert('Стипендія прив\'язана до активного навчання і не може бути видалена вручну.\nЗакинь або завершити навчання щоб прибрати стипендію.');return;}
+  if(income&&income._protected){alert(L('alertStipendProtected'));return;}
   S.incomes=S.incomes.filter(i=>i.id!==id);save();fbSync();renderAll();
 }
 function openAddCourseModal(){
@@ -1235,20 +1251,20 @@ function openAddTrainingModal(){
   document.getElementById('mt-biz').value='';
   openModal('m-trn');
 }
-function saveCourse(){const n=document.getElementById('mc-name').value.trim();if(!n){alert('Введіть назву!');return;}S.courses.push({id:'c'+Date.now(),name:n,field:document.getElementById('mc-field').value.trim(),pay:parseFloat(document.getElementById('mc-pay').value)||0});closeModal('m-crs');save();fbSync();renderAll();}
+function saveCourse(){const n=document.getElementById('mc-name').value.trim();if(!n){alert(L('alertEnterName2'));return;}S.courses.push({id:'c'+Date.now(),name:n,field:document.getElementById('mc-field').value.trim(),pay:parseFloat(document.getElementById('mc-pay').value)||0});closeModal('m-crs');save();fbSync();renderAll();}
 function delCourse(id){S.courses=S.courses.filter(c=>c.id!==id);save();fbSync();renderAll();}
-function saveTraining(){const n=document.getElementById('mt-name').value.trim();if(!n){alert('Введіть назву!');return;}S.trainings.push({id:'t'+Date.now(),name:n,mEmp:parseFloat(document.getElementById('mt-emp').value)||1,mSelf:parseFloat(document.getElementById('mt-self').value)||1,mBiz:parseFloat(document.getElementById('mt-biz').value)||1});closeModal('m-trn');save();fbSync();renderAll();}
+function saveTraining(){const n=document.getElementById('mt-name').value.trim();if(!n){alert(L('alertEnterName2'));return;}S.trainings.push({id:'t'+Date.now(),name:n,mEmp:parseFloat(document.getElementById('mt-emp').value)||1,mSelf:parseFloat(document.getElementById('mt-self').value)||1,mBiz:parseFloat(document.getElementById('mt-biz').value)||1});closeModal('m-trn');save();fbSync();renderAll();}
 function delTraining(id){S.trainings=S.trainings.filter(t=>t.id!==id);save();fbSync();renderAll();}
 
 function openEndRound(){
   const i=totalInc(),e=totalExp(),b=bal(),nC=S.cash+b;
-  document.getElementById('er-title').textContent='Завершити Раунд '+S.round;
+  document.getElementById('er-title').textContent=L('mEndTitle',S.round);
   document.getElementById('er-cur').textContent=fmt(S.cash);
   document.getElementById('er-inc').textContent='+'+fmt(i);
   document.getElementById('er-exp').textContent='−'+fmt(e);
   document.getElementById('er-new').textContent=fmt(nC);
   document.getElementById('er-new').className='mono '+(nC>=0?'green':'red');
-  document.getElementById('er-badge').innerHTML=`Сальдо <strong style="color:${b>=0?'var(--green)':'var(--red)'}">${fmtS(b)}</strong> буде ${b>=0?'додано до':'знято з'} готівки`;
+  document.getElementById('er-badge').innerHTML=L('mEndBadge',b>=0?'var(--green)':'var(--red)',fmtS(b),b>=0);
   // Warning if new cash would be negative
   let warn=document.getElementById('er-warn');
   if(!warn){
@@ -1257,7 +1273,7 @@ function openEndRound(){
     warn.style.cssText='font-size:12px;color:var(--gold);margin-top:6px';
     document.getElementById('er-new').parentNode.appendChild(warn);
   }
-  warn.textContent=nC<0?'⚠️ Готівки не вистачить — при підтвердженні з\'явиться вибір кредиту':'';
+  warn.textContent=nC<0?L('mEndWarn'):'';
   openModal('m-end');
 }
 function finishRound(){
@@ -1269,8 +1285,8 @@ function finishRound(){
   const passive=totalPassiveInc();
   if(passive>=30000){
     setTimeout(()=>{
-      if(confirm(`🎉 Пасивний дохід досяг ${fmt(passive)}/раунд!\n\nУмова переходу виконана (мінімум $30,000).\nПерейти до Раунду 2?`)){
-        alert('Раунд 2 буде доступний у наступному оновленні. Продовжуй накопичувати!');
+      if(confirm(L('alertPassiveGoal',fmt(passive)))){
+        alert(L('alertRound2Soon'));
       }
     },300);
   }
@@ -1290,9 +1306,9 @@ function openDebtModal(){
   const bankAvail=3000-S.loans.bankRem;
   const microAvail=30000-S.loans.microRem;
   document.getElementById('debt-info').innerHTML=
-    `Готівка: <strong style="color:var(--text)">${fmt(S.cash)}</strong><br>`+
-    `Сальдо: <strong style="color:var(--red)">−${fmt(Math.abs(_balanceSnapshot))}</strong><br>`+
-    `Не вистачає: <strong style="color:var(--red)">${fmt(shortfall)}</strong>`;
+    `${L('mDebtCash')} <strong style="color:var(--text)">${fmt(S.cash)}</strong><br>`+
+    `${L('mDebtBalance')} <strong style="color:var(--red)">−${fmt(Math.abs(_balanceSnapshot))}</strong><br>`+
+    `${L('mDebtShortfall')} <strong style="color:var(--red)">${fmt(shortfall)}</strong>`;
   renderDebtOptions(shortfall,bankAvail,microAvail);
   openModal('m-debt');
 }
@@ -1301,11 +1317,11 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
   box.innerHTML='';
   const noBank=bankAvail<=0, noMicro=microAvail<=0;
   if(noBank&&noMicro){
-    box.innerHTML='<div style="color:var(--red);font-size:14px;font-weight:600;text-align:center;padding:8px 0">❌ Кредитні ліміти вичерпано</div>';
+    box.innerHTML=`<div style="color:var(--red);font-size:14px;font-weight:600;text-align:center;padding:8px 0">${L('mDebtNoCredit')}</div>`;
     const b=document.createElement('button');
     b.className='btn-primary';
     b.style.cssText='background:var(--red);color:#fff;margin-top:4px';
-    b.textContent='Оголосити банкрутство';
+    b.textContent=L('mDebtBankrupt');
     b.onclick=showBankrupt;
     box.appendChild(b);
     return;
@@ -1315,7 +1331,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     const amount=Math.min(shortfall,bankAvail);
     const b=document.createElement('button');
     b.className='btn-primary';
-    b.textContent=`🏦 Взяти в банку ${fmt(amount)} (залишок ліміту: ${fmt(bankAvail)})`;
+    b.textContent=L('mDebtBankBtn',fmt(amount),fmt(bankAvail));
     b.onclick=()=>{
       S.loans.bankAmt=(S.loans.bankAmt||0)+amount;
       S.loans.bankRem+=amount; S.cash+=amount;
@@ -1332,7 +1348,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     const b=document.createElement('button');
     b.className='btn-primary';
     b.style.cssText='background:var(--elevated);border:1px solid var(--border);color:var(--text)';
-    b.textContent=`💸 Взяти в мікрокредит ${fmt(amount)} (залишок ліміту: ${fmt(microAvail)})`;
+    b.textContent=L('mDebtMicroBtn',fmt(amount),fmt(microAvail));
     b.onclick=()=>{
       S.loans.microAmt=(S.loans.microAmt||0)+amount;
       S.loans.microRem+=amount; S.cash+=amount;
@@ -1351,7 +1367,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     const b=document.createElement('button');
     b.className='btn-primary';
     b.style.cssText='background:var(--elevated);border:1px solid rgba(245,166,35,0.4);color:var(--gold)';
-    b.textContent=`🏦💸 Банк ${fmt(bankPart)} + Мікрокредит ${fmt(microPart)}`;
+    b.textContent=L('mDebtBothBtn',fmt(bankPart),fmt(microPart));
     b.onclick=()=>{
       S.loans.bankAmt=(S.loans.bankAmt||0)+bankPart;
       S.loans.bankRem+=bankPart; S.cash+=bankPart;
@@ -1367,18 +1383,12 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
   }
 }
 function resetGame(){
-  if(confirm('Скинути гру? Всі дані будуть видалені.')){localStorage.clear();location.reload();}
+  if(confirm(L('alertResetConfirm'))){localStorage.clear();location.reload();}
 }
 function showBankrupt(){
   closeModal('m-debt');
   const total=S.loans.bankRem+S.loans.microRem;
-  document.getElementById('bankrupt-info').innerHTML=
-    `${S.playerName} не зміг розрахуватись з боргами.<br><br>`+
-    `Готівка: <strong style="color:var(--text)">${fmt(S.cash)}</strong><br>`+
-    `Борг банку: <strong style="color:var(--text)">${fmt(S.loans.bankRem)}</strong><br>`+
-    `Мікрокредит: <strong style="color:var(--text)">${fmt(S.loans.microRem)}</strong><br>`+
-    `Загальний борг: <strong style="color:var(--red)">${fmt(total)}</strong><br><br>`+
-    `Раунд ${S.round} · Гра завершена`;
+  document.getElementById('bankrupt-info').innerHTML=L('mBankruptInfo',S.playerName,fmt(S.cash),fmt(S.loans.bankRem),fmt(S.loans.microRem),fmt(total),S.round);
   openModal('m-bankrupt');
 }
 function openModal(id){document.getElementById(id).classList.remove('hidden');}
@@ -1426,7 +1436,43 @@ function load(){
   return false;
 }
 
+function applySelectOptions(){
+  // Income type select
+  const sel=document.getElementById('mi-type');
+  if(sel){
+    sel.options[0].text=L('mIncTypeEmployee');
+    sel.options[1].text=L('mIncTypeSelf');
+    sel.options[2].text=L('mIncTypePassive');
+  }
+  // Condition type select
+  const ct=document.getElementById('mi-condition-type');
+  if(ct){
+    ct.options[0].text=L('mIncCondNone');
+    ct.options[1].text=L('mIncCondEdu');
+    ct.options[2].text=L('mIncCondExp');
+  }
+  // Condition edu select
+  const eduSel=document.getElementById('mi-condition-edu');
+  if(eduSel){
+    const opts=L('mIncCondEduOpts');
+    Array.from(eduSel.options).forEach(o=>{if(opts[o.value])o.text=opts[o.value];});
+  }
+  // Condition exp select
+  const expSel=document.getElementById('mi-condition-exp');
+  if(expSel){
+    const opts=L('mIncCondExpOpts');
+    Array.from(expSel.options).forEach(o=>{if(opts[o.value])o.text=opts[o.value];});
+  }
+}
+
+// Override setLang to also refresh select options
+const _origSetLang=setLang;
+// (setLang already calls applyLang + renderAll from lang.js, just add select refresh)
+window.addEventListener('cf-lang-changed',()=>{applySelectOptions();renderAll();});
+
 function init(){
+  applyLang();
+  applySelectOptions();
   if(load()&&S.playerName){
     if(S.roomCode&&window._fbInit){window._fbInit(S.roomCode,S.playerName);_fbActive=true;}
     document.getElementById('setup-screen').classList.add('hidden');

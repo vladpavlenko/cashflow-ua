@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#08090f">
   <title>CashFlow GM</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="lang.js"></script>
 
   <script type="module">
     import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -327,6 +328,12 @@
     }
     .room-menu-btn:hover { background: var(--elevated); }
 
+    /* Lang switcher */
+    .lang-switcher { display:flex; gap:3px; }
+    .lang-btn { background:transparent; border:1px solid var(--border); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:600; color:var(--sub); cursor:pointer; font-family:var(--mono); letter-spacing:0.5px; transition:border-color 0.15s,color 0.15s; }
+    .lang-btn.active { border-color:var(--gold); color:var(--gold); }
+    .lang-btn:hover:not(.active) { border-color:var(--text); color:var(--text); }
+
     /* Alert banner */
     .alert-banner {
       background: var(--red-dim);
@@ -345,25 +352,31 @@
 <!-- ══ LOGIN ══ -->
 <div id="login-screen">
   <div class="logo">CashFlow</div>
-  <div class="logo-sub">Фінансова гра</div>
-  <div class="gm-badge">🎮 Ведучий · GM Panel</div>
+  <div class="logo-sub" data-i18n="logoSub">Фінансова гра</div>
+  <div class="gm-badge" data-i18n="gmBadge">🎮 Ведучий · GM Panel</div>
 
   <div class="login-card">
-    <h2>Підключитись до кімнати</h2>
+    <h2 data-i18n="gmLoginTitle">Підключитись до кімнати</h2>
     <div class="f-group">
-      <label class="f-label">Код кімнати</label>
+      <label class="f-label" data-i18n="gmRoomLabel">Код кімнати</label>
       <input type="text" class="f-input" id="room-inp" placeholder="ABCD" maxlength="6"
              autocomplete="off" autocapitalize="characters"
              oninput="this.value=this.value.toUpperCase()">
     </div>
 
     <div class="btn-row">
-      <button class="btn-create" onclick="createRoom()">Створити нову</button>
-      <button class="btn-join"   onclick="joinRoom()">Підключитись</button>
+      <button class="btn-create" onclick="createRoom()" data-i18n="gmCreateBtn">Створити нову</button>
+      <button class="btn-join"   onclick="joinRoom()" data-i18n="gmJoinBtn">Підключитись</button>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:center">
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="UA" onclick="setLang('UA')">UA</button>
+        <button class="lang-btn" data-lang="RU" onclick="setLang('RU')">RU</button>
+      </div>
     </div>
   </div>
 
-  <p class="hint">
+  <p class="hint" data-i18n-html="gmHint">
     <strong>Створити нову</strong> — генерує код та відкриває кімнату<br>
     <strong>Підключитись</strong> — відкриває існуючу кімнату за кодом
   </p>
@@ -381,10 +394,10 @@
     <div class="gm-header-right">
       <div class="live-pill"><div class="live-dot"></div><span>LIVE</span></div>
       <div class="player-count" id="hdr-player-count">0 гравців</div>
-      <button class="btn-leave" onclick="leaveRoom()">← Вийти</button>
+      <button class="btn-leave" onclick="leaveRoom()" data-i18n="gmLeaveBtn">← Вийти</button>
       <div style="position:relative" id="room-mgmt-wrap">
         <button class="btn-leave" onclick="toggleRoomMenu()"
-                style="border-color:var(--border);color:var(--sub)">
+                style="border-color:var(--border);color:var(--sub)" data-i18n="gmRoomBtn">
           ⚙️ Кімната
         </button>
         <div id="room-menu" class="hidden"
@@ -392,15 +405,19 @@
                     background:var(--surface);border:1px solid var(--border);
                     border-radius:12px;padding:6px;min-width:200px;z-index:50;
                     box-shadow:0 8px 24px rgba(0,0,0,0.4)">
-          <button class="room-menu-btn" onclick="gmClearRoom()">
+          <button class="room-menu-btn" onclick="gmClearRoom()" data-i18n="gmClearBtn">
             🧹 Очистити всіх гравців
           </button>
           <div style="height:1px;background:var(--border);margin:4px 0"></div>
           <button class="room-menu-btn" onclick="gmDeleteRoom()"
-                  style="color:var(--red)">
+                  style="color:var(--red)" data-i18n="gmDeleteBtn">
             🗑️ Закрити кімнату повністю
           </button>
         </div>
+      </div>
+      <div class="lang-switcher" style="margin-left:4px">
+        <button class="lang-btn" data-lang="UA" onclick="setLang('UA')">UA</button>
+        <button class="lang-btn" data-lang="RU" onclick="setLang('RU')">RU</button>
       </div>
     </div>
   </div>
@@ -416,10 +433,10 @@
   <div class="gm-content">
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">⏳</div>
-      <div class="empty-title">Очікуємо гравців</div>
-      <p class="empty-sub">Дай гравцям цей код кімнати:</p>
+      <div class="empty-title" data-i18n="gmEmptyTitle">Очікуємо гравців</div>
+      <p class="empty-sub" data-i18n="gmEmptySub1">Дай гравцям цей код кімнати:</p>
       <div class="room-code-big" id="big-room-code">—</div>
-      <p class="empty-sub">Вони вводять його при старті гри<br>і з'являться тут автоматично</p>
+      <p class="empty-sub" data-i18n-html="gmEmptySub2">Вони вводять його при старті гри<br>і з'являться тут автоматично</p>
     </div>
 
     <div class="players-grid hidden" id="players-grid"></div>
@@ -446,14 +463,14 @@ async function createRoom() {
   inp.value = code.toUpperCase();
   if (window._gmCreateRoom) {
     const ok = await window._gmCreateRoom(code);
-    if (!ok) { alert('Помилка створення кімнати. Перевір Firebase конфіг.'); return; }
+    if (!ok) { alert(L('gmErrCreate')); return; }
   }
   openDashboard(code);
 }
 
 function joinRoom() {
   const code = document.getElementById('room-inp').value.trim();
-  if (code.length < 4) { alert('Введи код кімнати (4+ символи)'); return; }
+  if (code.length < 4) { alert(L('gmErrJoin')); return; }
   openDashboard(code);
 }
 
@@ -487,7 +504,7 @@ window._gmOnUpdate = (data) => {
 };
 
 window._gmOnError = (msg) => {
-  showAlert('Firebase помилка: ' + msg);
+  showAlert(L('gmFirebaseErr', msg));
 };
 
 /* ── Render dashboard ── */
@@ -496,7 +513,7 @@ function renderDashboard() {
   const online  = entries.filter(([,p]) => p._online !== false);
   const total   = entries.length;
 
-  document.getElementById('hdr-player-count').textContent = total + ' гравець' + (total === 1 ? '' : total < 5 ? 'ів' : 'ів');
+  document.getElementById('hdr-player-count').textContent = L('gmPlayerCount', total);
 
   // Toggle empty vs grid
   const grid  = document.getElementById('players-grid');
@@ -520,7 +537,7 @@ function renderSummary(players) {
   const online = players.filter(p=>p._online!==false).length;
   document.getElementById('summary-bar').innerHTML = `
     <div class="sum-item" style="flex-shrink:0">
-      <div class="sum-lbl">Гравців онлайн</div>
+      <div class="sum-lbl">${L('gmPlayersOnline')}</div>
       <div class="sum-val" id="player-count">${online} / ${players.length}</div>
     </div>
     <div style="width:1px;background:var(--border);flex-shrink:0;align-self:stretch;margin:8px 0"></div>
@@ -544,7 +561,7 @@ function renderLeaderboard(players) {
     .sort((a, b) => b.passive - a.passive);
 
   if (withPassive.length === 0) {
-    bar.innerHTML = '<div style="font-size:12px;color:var(--sub);padding:0 8px">Очікуємо гравців...</div>';
+    bar.innerHTML = `<div style="font-size:12px;color:var(--sub);padding:0 8px">${L('gmWaiting')}</div>`;
     return;
   }
 
@@ -582,16 +599,16 @@ function checkAnomalies(players) {
   const flags = [];
   players.forEach(p => {
     if ((p.cash || 0) < 0)
-      flags.push(`${p.playerName}: готівка від'ємна ($${p.cash})`);
+      flags.push(L('gmAnomCashNeg', p.playerName, p.cash));
     if ((p.loans?.bankRem  || 0) > 3000)
-      flags.push(`${p.playerName}: борг банку перевищує ліміт`);
+      flags.push(L('gmAnomBankOver', p.playerName));
     if ((p.loans?.microRem || 0) > 30000)
-      flags.push(`${p.playerName}: мікрокредит перевищує ліміт → банкрутство`);
+      flags.push(L('gmAnomMicroOver', p.playerName));
     if ((p.exp?.kids || 0) > 3)
-      flags.push(`${p.playerName}: більше 3 дітей`);
+      flags.push(L('gmAnomKids', p.playerName));
     const activeCount = (p.incomes || []).filter(i => i.type==='employee' || i.type==='self' || i.type==='stipend').length;
     if (activeCount > 2)
-      flags.push(`${p.playerName}: більше 2 активних доходів (${activeCount})`);
+      flags.push(L('gmAnomIncomes', p.playerName, activeCount));
   });
   const banner = document.getElementById('alert-banner');
   if (flags.length) {
@@ -604,18 +621,19 @@ function checkAnomalies(players) {
 
 function getEduDisplay(p) {
   const educations = p.educations || [];
-  if (educations.length === 0) return { icon: '🚶', label: 'Без навчання', sub: '' };
+  if (educations.length === 0) return { icon: '🚶', label: L('gmEduNoStudy'), sub: '' };
   const active    = educations.filter(e => !e.completed);
   const completed = educations.filter(e =>  e.completed);
   const parts = [];
   active.forEach(e => {
     const done = (e.roundsTotal || 0) - (e.roundsLeft || 0);
-    parts.push(`📚 ${e.specialty?.name ?? (e.type==='university'?'Університет':'Технікум')} · ${done}/${e.roundsTotal||'?'} раундів`);
+    const typeName = e.type==='university' ? L('gmEduUni') : L('gmEduCol');
+    parts.push(`📚 ${e.specialty?.name ?? typeName} · ${L('gmEduRounds', done, e.roundsTotal||'?')}`);
   });
   completed.forEach(e => parts.push(`✅ ${e.specialty?.name ?? e.type}`));
   return {
     icon:  active.length > 0 ? '📚' : '✅',
-    label: active.length > 0 ? 'Студент' : 'Освіта отримана',
+    label: active.length > 0 ? L('gmEduStudent') : L('gmEduCompleted'),
     sub:   parts.join(' · '),
   };
 }
@@ -643,11 +661,11 @@ function playerCard(key, p) {
   const passiveRow = `
     <div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">Пасивний дохід</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub)">${L('gmPassiveInc')}</div>
         <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:${passiveColor}">$${Math.round(passive).toLocaleString()}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:10px;color:var(--sub);margin-bottom:4px">до Раунду 2 · ${pct}%</div>
+        <div style="font-size:10px;color:var(--sub);margin-bottom:4px">${L('gmToRound2')}${pct}%</div>
         <div style="width:80px;height:4px;background:var(--border);border-radius:4px;overflow:hidden">
           <div style="width:${pct}%;height:100%;background:${passiveColor};border-radius:4px"></div>
         </div>
@@ -662,40 +680,40 @@ function playerCard(key, p) {
     const trn   = p.trainings || [];
     const ex    = p.exp       || {};
     const loans = p.loans     || {};
-    const typeLbl = {employee:'Найманий',self:'На себе',stipend:'Стипендія',passive:'Пасивний'};
+    const typeLbl = {employee:L('gmTypeEmployee'),self:L('gmTypeSelf'),stipend:L('gmTypeStipend'),passive:L('gmTypePassive')};
     const housingAmt = parseFloat(ex.housingBase) || 0;
     const kidCost    = parseFloat(ex.kidCost)     || 0;  // AUTO-ADDED from index.html
     const kids       = ex.kids || 0;
 
     detail = `<div class="pc-detail">
       ${inc.length ? `<div class="detail-section">
-        <div class="detail-title">Доходи</div>
+        <div class="detail-title">${L('gmDetailIncomes')}</div>
         ${inc.map(i => {
           // AUTO-ADDED from index.html: show condition for passive incomes
-          const condLabel = i.type==='passive' && i.condition ? ` · Умова: ${i.condition.label}` : (i.field ? ` · ${i.field}` : '');
+          const condLabel = i.type==='passive' && i.condition ? ` · ${L('gmCondPrefix')}${i.condition.label}` : (i.field ? ` · ${i.field}` : '');
           return `<div class="detail-row"><span class="lft">${i.name} <span style="opacity:.5;font-size:11px">${typeLbl[i.type]||i.type}${condLabel}</span></span><span class="rgt pos">$${(i.basePay||0).toFixed(0)}</span></div>`;
         }).join('')}
       </div>` : ''}
 
       <div class="detail-section">
-        <div class="detail-title">Витрати</div>
-        <div class="detail-row"><span class="lft">${ex.housingLabel||'Житло'}</span><span class="rgt neg">$${housingAmt.toFixed(0)}</span></div>
-        <div class="detail-row"><span class="lft">Їжа</span><span class="rgt neg">$${(parseFloat(ex.food)||0).toFixed(0)}</span></div>
-        <div class="detail-row"><span class="lft">Зв'язок</span><span class="rgt neg">$${(parseFloat(ex.comm)||0).toFixed(0)}</span></div>
-        <div class="detail-row"><span class="lft">Транспорт</span><span class="rgt neg">$${(parseFloat(ex.transport)||0).toFixed(0)}</span></div>
-        ${ex.hasWife ? `<div class="detail-row"><span class="lft">💍 Партнер</span><span class="rgt neg">$${(parseFloat(ex.wifeAmt)||0).toFixed(0)}</span></div>` : ''}
-        ${kids > 0 ? `<div class="detail-row"><span class="lft">👶 Діти (${kids} × $${kidCost})</span><span class="rgt neg">$${(kids*kidCost).toFixed(0)}</span></div>` : ''}
-        ${(loans.bankRem>0)  ? `<div class="detail-row"><span class="lft">🏦 Банк (залишок $${loans.bankRem})</span><span class="rgt neg">$${(loans.bankRem*0.03).toFixed(0)}</span></div>` : ''}
-        ${(loans.microRem>0) ? `<div class="detail-row"><span class="lft">💸 Мікрокредит (залишок $${loans.microRem})</span><span class="rgt neg">$${(loans.microRem*0.30).toFixed(0)}</span></div>` : ''}
+        <div class="detail-title">${L('gmDetailExpenses')}</div>
+        <div class="detail-row"><span class="lft">${ex.housingLabel==='Квартира'?L('housingApt'):L('housingDorm')}</span><span class="rgt neg">$${housingAmt.toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">${L('gmDetailFood')}</span><span class="rgt neg">$${(parseFloat(ex.food)||0).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">${L('gmDetailComm')}</span><span class="rgt neg">$${(parseFloat(ex.comm)||0).toFixed(0)}</span></div>
+        <div class="detail-row"><span class="lft">${L('gmDetailTransport')}</span><span class="rgt neg">$${(parseFloat(ex.transport)||0).toFixed(0)}</span></div>
+        ${ex.hasWife ? `<div class="detail-row"><span class="lft">${L('gmDetailPartner')}</span><span class="rgt neg">$${(parseFloat(ex.wifeAmt)||0).toFixed(0)}</span></div>` : ''}
+        ${kids > 0 ? `<div class="detail-row"><span class="lft">${L('gmDetailKids',kids,kidCost)}</span><span class="rgt neg">$${(kids*kidCost).toFixed(0)}</span></div>` : ''}
+        ${(loans.bankRem>0)  ? `<div class="detail-row"><span class="lft">${L('gmDetailBank',loans.bankRem)}</span><span class="rgt neg">$${(loans.bankRem*0.03).toFixed(0)}</span></div>` : ''}
+        ${(loans.microRem>0) ? `<div class="detail-row"><span class="lft">${L('gmDetailMicro',loans.microRem)}</span><span class="rgt neg">$${(loans.microRem*0.30).toFixed(0)}</span></div>` : ''}
       </div>
 
       ${crs.length ? `<div class="detail-section">
-        <div class="detail-title">Курси (${crs.length})</div>
+        <div class="detail-title">${L('gmDetailCourses',crs.length)}</div>
         ${crs.map(c=>`<div class="detail-row"><span class="lft">${c.name} · ${c.field}</span><span class="rgt gold">+$${(c.pay||0).toFixed(0)}</span></div>`).join('')}
       </div>` : ''}
 
       ${trn.length ? `<div class="detail-section">
-        <div class="detail-title">Тренінги (${trn.length})</div>
+        <div class="detail-title">${L('gmDetailTrainings',trn.length)}</div>
         ${trn.map(t=>`<div class="detail-row"><span class="lft">${t.name}</span><span class="rgt gold">×${(parseFloat(t.mEmp)||1).toFixed(2)} / ×${(parseFloat(t.mSelf)||1).toFixed(2)} / ×${(parseFloat(t.mBiz)||1).toFixed(2)}</span></div>`).join('')}
       </div>` : ''}
     </div>`;
@@ -710,10 +728,10 @@ function playerCard(key, p) {
       <div style="display:flex;align-items:center;gap:8px">
         <div class="pc-status">
           <div class="pc-dot ${online?'on':''}"></div>
-          <span>${online ? 'онлайн' : 'офлайн'}</span>
+          <span>${online ? L('gmOnline') : L('gmOffline')}</span>
         </div>
         <button onclick="gmKickPlayer('${key}')"
-                title="Видалити гравця з кімнати"
+                title="${L('gmKickTooltip')}"
                 style="background:none;border:none;color:var(--sub);
                        cursor:pointer;font-size:15px;padding:8px;
                        border-radius:6px">✕</button>
@@ -724,18 +742,18 @@ function playerCard(key, p) {
       <div class="pc-edu">${edu.icon} ${edu.sub || edu.label}</div>
     </div>
     <div class="pc-cash-row">
-      <div class="pc-cash-lbl">Готівка</div>
+      <div class="pc-cash-lbl">${L('gmCash')}</div>
       <div class="pc-cash-val">$${Math.abs(p.cash||0).toFixed(0)}</div>
     </div>
     ${passiveRow}
     <div class="pc-fin">
-      <div class="pc-fin-item inc"><div class="pc-fin-lbl">Дохід</div><div class="pc-fin-val">$${(p.totalIncome||0).toFixed(0)}</div></div>
-      <div class="pc-fin-item exp"><div class="pc-fin-lbl">Витрати</div><div class="pc-fin-val">$${(p.totalExpense||0).toFixed(0)}</div></div>
-      <div class="pc-fin-item bal"><div class="pc-fin-lbl">Сальдо</div><div class="pc-fin-val ${balCls}">${balSign}$${Math.abs(bal).toFixed(0)}</div></div>
+      <div class="pc-fin-item inc"><div class="pc-fin-lbl">${L('gmIncome')}</div><div class="pc-fin-val">$${(p.totalIncome||0).toFixed(0)}</div></div>
+      <div class="pc-fin-item exp"><div class="pc-fin-lbl">${L('gmExpenses')}</div><div class="pc-fin-val">$${(p.totalExpense||0).toFixed(0)}</div></div>
+      <div class="pc-fin-item bal"><div class="pc-fin-lbl">${L('gmBalance')}</div><div class="pc-fin-val ${balCls}">${balSign}$${Math.abs(bal).toFixed(0)}</div></div>
     </div>
     <div class="pc-expand">
       <button class="btn-expand" onclick="toggleExpand('${key}')">
-        ${exp ? '▲ Сховати деталі' : '▼ Всі деталі'}
+        ${exp ? L('gmCollapse') : L('gmExpand')}
       </button>
     </div>
     ${detail}
@@ -775,20 +793,19 @@ async function gmKickPlayer(playerKey) {
   const playerData = _players[playerKey];
   const name = playerData?.playerName || playerKey;
 
-  if (!confirm(`Видалити гравця "${name}" з кімнати?\nЦе не скине його локальний стан гри.`)) return;
+  if (!confirm(L('gmConfirmKick', name))) return;
 
   const ok = await window._gmRemovePlayer?.(_currentRoom, playerKey);
   if (ok) {
-    console.log(`Гравець ${name} видалений з кімнати`);
-    // Firebase onValue автоматично оновить _players і перемалює картки
+    console.log(`Player ${name} removed from room`);
   } else {
-    alert('Помилка видалення. Перевір підключення.');
+    alert(L('gmErrKick'));
   }
 }
 
 async function gmClearRoom() {
   const count = Object.keys(_players).filter(k => !k.startsWith('_')).length;
-  if (!confirm(`Очистити кімнату #${_currentRoom}?\nБуде видалено ${count} гравців.`)) return;
+  if (!confirm(L('gmConfirmClear', _currentRoom, count))) return;
 
   const ok = await window._gmClearRoom?.(_currentRoom);
   if (ok) {
@@ -796,32 +813,30 @@ async function gmClearRoom() {
     document.getElementById('room-menu')?.classList.add('hidden');
     renderDashboard();
   } else {
-    alert('Помилка очистки. Перевір підключення.');
+    alert(L('gmErrClear'));
   }
 }
 
 async function gmDeleteRoom() {
-  if (!confirm(
-    `УВАГА: Закрити кімнату #${_currentRoom} повністю?\n` +
-    `Всі дані гравців будуть видалені з Firebase.\n` +
-    `Локальний стан гравців (localStorage) залишиться.`
-  )) return;
+  if (!confirm(L('gmConfirmDelete', _currentRoom))) return;
 
   const ok = await window._gmDeleteRoom?.(_currentRoom);
   if (ok) {
     document.getElementById('room-menu')?.classList.add('hidden');
     leaveRoom();
   } else {
-    alert('Помилка видалення кімнати.');
+    alert(L('gmErrDelete'));
   }
 }
 
 /* ── Init ── */
 function init(){
+  applyLang();
   const saved=sessionStorage.getItem('gm_room');
   if(saved){ document.getElementById('room-inp').value=saved; }
 }
 init();
+window.addEventListener('cf-lang-changed',()=>{ if(typeof renderDashboard==='function') renderDashboard(); });
 </script>
 </body>
 </html>
