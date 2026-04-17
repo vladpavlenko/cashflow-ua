@@ -31,7 +31,7 @@ const LANGS = {
     setupStartBtn:    'Почати гру →',
 
     // ── Tabs ──
-    tabOv:  'Огляд',
+    tabOv:  'Звіт',
     tabInc: 'Доходи',
     tabExp: 'Витрати',
     tabCrs: 'Курси',
@@ -390,7 +390,7 @@ const LANGS = {
     setupStartBtn:    'Начать игру →',
 
     // ── Tabs ──
-    tabOv:  'Обзор',
+    tabOv:  'Отчет',
     tabInc: 'Доходы',
     tabExp: 'Расходы',
     tabCrs: 'Курсы',
