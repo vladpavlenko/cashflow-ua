@@ -93,8 +93,8 @@
       --glass-bg:     rgba(255,255,255,0.04);
       --glass-border: rgba(255,255,255,0.08);
       --glass-hover:  rgba(255,255,255,0.07);
-      --tab-h:        80px;
-      --tab-total:    calc(80px + env(safe-area-inset-bottom));
+      --tab-h:        83px;
+      --tab-total:    calc(83px + env(safe-area-inset-bottom));
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html { height: -webkit-fill-available; }
@@ -169,16 +169,15 @@
     .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--tab-total) + 70px); }
 
     /* Bottom tab bar */
-    .bottom-tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-h); padding-bottom: env(safe-area-inset-bottom); padding-top: 10px; background: rgba(10,12,22,0.88); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid var(--glass-border); display: flex; align-items: flex-start; justify-content: space-around; z-index: 20; }
-    .btab { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 12px; cursor: pointer; position: relative; color: #3d4560; transition: color 0.2s; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .bottom-tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-h); padding-bottom: env(safe-area-inset-bottom); padding-top: 8px; background: rgba(10,12,22,0.88); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid var(--glass-border); display: flex; align-items: flex-start; justify-content: space-around; z-index: 20; }
+    .btab { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; flex: 1; height: 100%; padding-top: 2px; padding-bottom: 0; min-height: 44px; cursor: pointer; position: relative; color: #3d4560; transition: color 0.2s; user-select: none; -webkit-tap-highlight-color: transparent; }
     .btab.active { color: var(--gold); }
     .btab-icon { width: 24px; height: 24px; transition: transform 0.15s; }
     .btab:active .btab-icon { transform: scale(0.9); }
     .btab-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; line-height: 1; }
-    .btab-dot { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--gold); opacity: 0; transition: opacity 0.2s; }
-    .btab.active .btab-dot { opacity: 1; }
+    .btab-dot { display: none; }
     .tab-pane { padding: 16px; }
-    .sum-bar { position: fixed; bottom: var(--tab-total); left: 0; right: 0; background: rgba(10,12,22,0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--glass-border); display: flex; padding: 8px 14px; gap: 8px; z-index: 15; }
+    .sum-bar { position: fixed; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); left: 0; right: 0; background: rgba(10,12,22,0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--glass-border); display: flex; padding: 8px 14px; gap: 8px; z-index: 15; }
     .sum-item { flex: 1; text-align: center; padding: 7px 4px; border-radius: 10px; }
     .sum-item.inc { background: var(--green-dim); } .sum-item.exp { background: var(--red-dim); } .sum-item.bal { background: var(--elevated); }
     .sum-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sub); margin-bottom: 2px; }
