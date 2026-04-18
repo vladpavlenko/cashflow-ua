@@ -203,6 +203,7 @@
     .btab-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; line-height: 1; }
     .btab-dot { display: none; }
     .tab-pane { padding: 16px; }
+    #pane-ov { display: flex; flex-direction: column; min-height: calc(100svh - var(--tab-total) - 32px); }
     .sum-bar { position: fixed; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); left: 0; right: 0; background: rgba(10,12,22,0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--glass-border); display: flex; padding: 8px 14px; gap: 8px; z-index: 15; }
     .sum-item { flex: 1; text-align: center; padding: 7px 4px; border-radius: 10px; }
     .sum-item.inc { background: var(--green-dim); } .sum-item.exp { background: var(--red-dim); } .sum-item.bal { background: var(--elevated); }
@@ -478,7 +479,9 @@
                   border:1px solid var(--glass-border);
                   border-radius:14px;padding:12px 14px;margin-bottom:10px">
       </div>
-      <button class="btn-round" onclick="openEndRound()" data-i18n="ovEndRoundBtn">Завершити місяць →</button>
+      <div style="margin-top:auto;padding-top:16px">
+        <button class="btn-round" onclick="openEndRound()" data-i18n="ovEndRoundBtn">Завершити місяць →</button>
+      </div>
     </div>
 
     <!-- INCOME -->
@@ -1450,7 +1453,11 @@ function renderStudyCompact(){
   if(!block)return;
   const active=activeStudies();
   const completed=completedStudies();
-  if(active.length===0&&completed.length===0){block.classList.add('hidden');return;}
+  if(active.length===0&&completed.length===0){
+    block.classList.remove('hidden');
+    block.innerHTML=`<button onclick="openStartStudyModal()" style="width:100%;background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.2);border-radius:10px;padding:9px;color:var(--gold);font-family:var(--body);font-size:13px;font-weight:600;cursor:pointer">${L('ovStudyStartBtn')}</button>`;
+    return;
+  }
   block.classList.remove('hidden');
   let html='';
   active.forEach((edu,idx)=>{
@@ -1709,6 +1716,7 @@ function afterDebtResolved(){
   if(_debtContext==='round_end'){
     finishRound();
   } else if(_debtContext==='quick_expense'){
+    S.cash+=_balanceSnapshot; // _balanceSnapshot=-amount, відраховує витрату
     _pendingShortfall=0;
     _debtContext='round_end';
     closeModal('m-debt');
@@ -1717,6 +1725,7 @@ function afterDebtResolved(){
     if(_pendingDeal){
       S.deals=S.deals||[];
       S.deals.push(_pendingDeal);
+      S.cash-=_pendingDeal.invested;
       _pendingDeal=null;
     }
     _pendingShortfall=0;
@@ -1775,7 +1784,6 @@ function confirmDeal(){
     _pendingDeal=deal;
     _balanceSnapshot=-invested;
     _pendingShortfall=invested-S.cash;
-    S.cash=0;
     _debtContext='deal';
     closeModal('m-deal');
     openDebtModal();
@@ -1899,7 +1907,6 @@ function confirmQuickExpense(){
   } else {
     _balanceSnapshot=-amount;
     _pendingShortfall=amount-S.cash;
-    S.cash=0;
     _debtContext='quick_expense';
     closeModal('m-quick-expense');
     openDebtModal();
