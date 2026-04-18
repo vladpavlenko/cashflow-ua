@@ -75,6 +75,25 @@
         return true;
       } catch(e) { console.error(e); return false; }
     };
+
+    window._gmListenApprovals = (roomCode, callback) => {
+      if (!_db) return;
+      const r = ref(_db, `rooms/${roomCode.toUpperCase()}/approvals`);
+      onValue(r, snap => {
+        callback(snap.val() || {});
+      });
+    };
+
+    window._gmRespondApproval = async (roomCode, playerKey, status, amount) => {
+      if (!_db) return;
+      try {
+        await set(ref(_db, `rooms/${roomCode}/approvals/${playerKey}`), {
+          status,
+          amount,
+          ts: Date.now(),
+        });
+      } catch(e) { console.error('Approval response error:', e); }
+    };
   </script>
 
   <style>
@@ -445,6 +464,21 @@
     <span>⚠️</span><span id="alert-text"></span>
   </div>
 
+  <!-- approval banner for pending income requests -->
+  <div id="approval-banner" class="hidden"
+       style="background:rgba(245,166,35,0.08);
+              border-bottom:1px solid rgba(245,166,35,0.2);
+              padding:8px 24px;display:flex;align-items:center;
+              justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+      <span style="font-size:16px">⏳</span>
+      <span style="color:var(--gold);font-weight:600" id="approval-banner-text">
+        Очікує підтвердження
+      </span>
+    </div>
+    <div id="approval-banner-actions" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+
   <!-- summary across all players -->
   <div class="summary-bar" id="summary-bar"></div>
 
@@ -466,6 +500,7 @@
 let _currentRoom = null;
 let _players = {};
 let _expanded = {};
+let _pendingApprovals = {};
 
 /* ── Room creation ── */
 function randomCode() {
@@ -504,6 +539,14 @@ function openDashboard(code) {
 
   if (window._gmConnect) window._gmConnect(_currentRoom);
   else console.error('Firebase module not loaded');
+
+  if (window._gmListenApprovals) {
+    window._gmListenApprovals(_currentRoom, (approvals) => {
+      _pendingApprovals = approvals;
+      renderApprovalBanner();
+      renderDashboard();
+    });
+  }
 }
 
 function leaveRoom() {
@@ -513,6 +556,52 @@ function leaveRoom() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('players-grid').classList.add('hidden');
   document.getElementById('empty-state').classList.remove('hidden');
+}
+
+/* ── Approval banner ── */
+function renderApprovalBanner() {
+  const banner  = document.getElementById('approval-banner');
+  const text    = document.getElementById('approval-banner-text');
+  const actions = document.getElementById('approval-banner-actions');
+  if (!banner) return;
+
+  const pending = Object.entries(_pendingApprovals)
+    .filter(([, v]) => v?.status === 'pending');
+
+  if (pending.length === 0) { banner.classList.add('hidden'); return; }
+
+  banner.classList.remove('hidden');
+  text.textContent = `⏳ ${pending.length} запит${pending.length > 1 ? 'и' : ''} на підтвердження`;
+
+  actions.innerHTML = pending.map(([playerKey, req]) => `
+    <div style="display:flex;align-items:center;gap:6px;
+                background:rgba(0,0,0,0.2);border-radius:8px;
+                padding:5px 10px;border:1px solid rgba(245,166,35,0.2)">
+      <span style="font-size:12px;color:var(--text);font-weight:600">
+        ${req.playerName}: +$${req.amount}
+        ${req.desc ? `<span style="color:var(--sub);font-weight:400"> · ${req.desc}</span>` : ''}
+      </span>
+      <button onclick="gmApprove('${playerKey}', ${req.amount})"
+              style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);
+                     border-radius:6px;padding:3px 10px;color:var(--green);
+                     font-size:11px;font-weight:700;cursor:pointer">
+        ✓ Дозволити
+      </button>
+      <button onclick="gmReject('${playerKey}', ${req.amount})"
+              style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);
+                     border-radius:6px;padding:3px 10px;color:var(--red);
+                     font-size:11px;font-weight:700;cursor:pointer">
+        ✕ Відхилити
+      </button>
+    </div>`).join('');
+}
+
+async function gmApprove(playerKey, amount) {
+  await window._gmRespondApproval?.(_currentRoom, playerKey, 'approved', amount);
+}
+
+async function gmReject(playerKey, amount) {
+  await window._gmRespondApproval?.(_currentRoom, playerKey, 'rejected', amount);
 }
 
 /* ── Firebase callback ── */
@@ -549,6 +638,8 @@ function renderDashboard() {
 
   // Player cards
   grid.innerHTML = entries.map(([key, p]) => playerCard(key, p)).join('');
+
+  renderApprovalBanner();
 }
 
 function renderSummary(players) {
@@ -671,6 +762,14 @@ function playerCard(key, p) {
   if ((p.loans?.bankRem||0)  > 3000)  flags += '<span class="flag-badge">Банк↑</span>';
   if ((p.loans?.microRem||0) > 30000) flags += '<span class="flag-badge">МКО↑</span>';
 
+  const hasPending = _pendingApprovals[key]?.status === 'pending';
+  const pendingBadge = hasPending
+    ? `<div style="background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);
+                   border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--gold)">
+         ⏳ +$${_pendingApprovals[key].amount}
+       </div>`
+    : '';
+
   // Passive income row
   const passive = calcPassiveForPlayer(p);
   const goal    = 30000;
@@ -739,9 +838,10 @@ function playerCard(key, p) {
 
   return `<div class="player-card ${online?'online':'offline'}">
     <div class="pc-header">
-      <div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="pc-name">${p.playerName || key}</span>
         ${flags}
+        ${pendingBadge}
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <div class="pc-status">

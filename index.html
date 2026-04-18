@@ -18,7 +18,7 @@
   ═══════════════════════════════════════════ -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAOjnui8wVleQ-pNbGculhezKHrnEgLQcw",
@@ -70,6 +70,32 @@
     };
 
     window.addEventListener('beforeunload', () => window._fbOffline?.());
+
+    window._fbRequestIncomeApproval = async (roomCode, playerKey, payload) => {
+      if (!_db) return;
+      try {
+        await set(
+          ref(_db, `rooms/${roomCode}/approvals/${playerKey}`),
+          { ...payload, status: 'pending', ts: Date.now() }
+        );
+      } catch(e) { console.warn('Approval request error:', e); }
+    };
+
+    window._fbListenApproval = (roomCode, playerKey, callback) => {
+      if (!_db) return;
+      const r = ref(_db, `rooms/${roomCode}/approvals/${playerKey}`);
+      onValue(r, snap => {
+        const data = snap.val();
+        if (data) callback(data);
+      });
+    };
+
+    window._fbClearApproval = async (roomCode, playerKey) => {
+      if (!_db) return;
+      try {
+        await set(ref(_db, `rooms/${roomCode}/approvals/${playerKey}`), null);
+      } catch(e) {}
+    };
   </script>
 
   <style>
@@ -203,8 +229,15 @@
     .bal-card.pos .bv { color: var(--green); } .bal-card.neg .bv { color: var(--red); }
     .edu-badge { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); }
     .edu-icon { font-size: 28px; } .edu-text { font-size: 14px; font-weight: 600; } .edu-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
-    .btn-round { width: 100%; background: var(--elevated); border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: var(--text); font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-    .btn-round:active { background: var(--surface); }
+    .btn-round { width: 100%; background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; padding: 16px; color: #ffffff; font-family: var(--body); font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; transition: background 0.15s, transform 0.1s; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .btn-round:active { background: rgba(255,255,255,0.14); transform: scale(0.98); }
+    .qa-btn { display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 14px; font-family: var(--body); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s, transform 0.1s; min-width: 88px; }
+    .qa-btn:active  { transform: scale(0.95); opacity: 0.8; }
+    .qa-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .qa-icon { font-size: 14px; font-weight: 700; }
+    .qa-lbl  { font-size: 11px; }
+    .qa-income  { background: rgba(34,197,94,0.12);  border-color: rgba(34,197,94,0.25);  color: #4ade80; }
+    .qa-expense { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.22);  color: #f87171; }
 
     /* Fin tables */
     .sec-hdr { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 12px; }
@@ -397,22 +430,32 @@
   <div class="content">
     <!-- OVERVIEW -->
     <div class="tab-pane" id="pane-ov">
-      <div class="ov-cash">
-        <div class="ov-cash-label" data-i18n="ovCashLabel">Поточна готівка</div>
-        <div class="ov-cash-val" id="ov-cash">$500</div>
-        <div class="ov-cash-curr">USD</div>
+      <div class="ov-cash"
+           style="display:flex;align-items:center;justify-content:space-between;
+                  gap:12px;padding:20px 18px">
+        <div style="flex:1;min-width:0">
+          <div class="ov-cash-label">ПОТОЧНА ГОТІВКА</div>
+          <div class="ov-cash-val" id="ov-cash" style="font-size:44px">$500</div>
+          <div class="ov-cash-curr">USD</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
+          <button class="qa-btn qa-income" onclick="openQuickIncome()">
+            <span class="qa-icon">↑</span>
+            <span class="qa-lbl" data-i18n="qaIncomeBtn">Дохід</span>
+          </button>
+          <button class="qa-btn qa-expense" onclick="openQuickExpense()">
+            <span class="qa-icon">↓</span>
+            <span class="qa-lbl" data-i18n="qaExpenseBtn">Витрата</span>
+          </button>
+        </div>
       </div>
-      <div class="stat-grid">
-        <div class="stat-card inc-card"><div class="stat-lbl" data-i18n="ovIncLabel">Дохід / раунд</div><div class="stat-val" id="ov-inc">$0</div></div>
-        <div class="stat-card exp-card"><div class="stat-lbl" data-i18n="ovExpLabel">Витрати / раунд</div><div class="stat-val" id="ov-exp">$0</div></div>
+      <div id="study-compact-block" class="hidden"
+           style="background:var(--glass-bg);backdrop-filter:blur(12px);
+                  -webkit-backdrop-filter:blur(12px);
+                  border:1px solid var(--glass-border);
+                  border-radius:14px;padding:12px 14px;margin-bottom:10px">
       </div>
-      <div class="bal-card pos" id="ov-bal-card"><div class="bl" data-i18n="ovBalLabel">Сальдо</div><div class="bv" id="ov-bal">$0</div></div>
-      <div class="edu-badge">
-        <div class="edu-icon" id="ov-edu-icon">🎓</div>
-        <div><div class="edu-text" id="ov-edu-text">—</div><div class="edu-sub" id="ov-edu-sub">—</div></div>
-      </div>
-      <div id="study-buttons-container" style="margin-bottom:12px"></div>
-      <button class="btn-round" onclick="openEndRound()" data-i18n="ovEndRoundBtn">Завершити раунд →</button>
+      <button class="btn-round" onclick="openEndRound()" data-i18n="ovEndRoundBtn">Завершити місяць →</button>
     </div>
 
     <!-- INCOME -->
@@ -832,6 +875,61 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="m-quick-income"
+     onclick="overlayClose(event,'m-quick-income')">
+  <div class="modal">
+    <div class="modal-title" data-i18n="qaIncomeTitle">💰 Разовий дохід</div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="qaAmtLabel">Сума ($)</label>
+      <input type="number" class="f-input" id="qi-amount"
+             placeholder="0" min="1" oninput="onQiInput(this.value)">
+    </div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="qaDescLabel">Опис (необов'язково)</label>
+      <input type="text" class="f-input" id="qi-desc"
+             data-i18n-ph="qaDescPh" placeholder="напр. Продав річ" autocomplete="off" maxlength="40">
+    </div>
+    <div class="info-badge hidden" id="qi-gm-warn"
+         style="color:var(--gold);border-color:rgba(245,166,35,0.3);
+                background:rgba(245,166,35,0.07);margin-bottom:12px"
+         data-i18n="qaGmWarn">
+      ⚠️ Сума понад $1,000 — потрібне підтвердження Гейм Майстра.
+    </div>
+    <div class="info-badge hidden" id="qi-gm-status"
+         style="margin-bottom:12px"></div>
+    <button class="btn-primary" id="qi-confirm-btn"
+            onclick="confirmQuickIncome()" data-i18n="qaAddBtn">
+      Додати до готівки
+    </button>
+    <button class="btn-cancel" onclick="closeModal('m-quick-income')" data-i18n="cancel">
+      Скасувати
+    </button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="m-quick-expense"
+     onclick="overlayClose(event,'m-quick-expense')">
+  <div class="modal">
+    <div class="modal-title" data-i18n="qaExpenseTitle">💸 Разова витрата</div>
+    <div class="info-badge" data-i18n="qaExpenseInfo">
+      Якщо готівки не вистачає — запропонуємо взяти кредит.
+    </div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="qaAmtLabel">Сума ($)</label>
+      <input type="number" class="f-input" id="qe-amount"
+             placeholder="0" min="1">
+    </div>
+    <div class="info-badge hidden" id="qe-error"
+         style="color:var(--red);border-color:rgba(239,68,68,0.3)"></div>
+    <button class="btn-primary" onclick="confirmQuickExpense()" data-i18n="qaDeductBtn">
+      Списати
+    </button>
+    <button class="btn-cancel" onclick="closeModal('m-quick-expense')" data-i18n="cancel">
+      Скасувати
+    </button>
+  </div>
+</div>
+
 <!-- ══ LOGIC ══ -->
 <script>
 const UNI_SPECS=[
@@ -850,7 +948,7 @@ const COL_SPECS=[
 ];
 
 let S={
-  playerName:'',roomCode:'',cash:500,round:1,
+  playerName:'',roomCode:'',cash:500,round:1,pendingIncome:null,
   educations:[],
   incomes:[],
   exp:{housingLabel:'Гуртожиток',housingBase:0,housingType:'self',food:0,comm:0,transport:0,hasWife:false,wifeAmt:0,kids:0,kidCost:0},
@@ -865,6 +963,7 @@ function activeIncomeCount(){return S.incomes.filter(i=>i.type==='employee'||i.t
 
 let _setupEdu=null, _setupSpec=null, _fbActive=false;
 let _pendingShortfall=0, _balanceSnapshot=0;
+let _debtContext='round_end';
 
 function onRoomInput(v) {
   const el=document.getElementById('sync-badge');
@@ -921,7 +1020,29 @@ function startGame(){
   } else {
     S.exp.housingLabel='Квартира'; S.exp.housingBase=200; S.exp.food=30; S.exp.comm=10; S.exp.transport=40;
   }
-  if(room.length>=4&&window._fbInit){window._fbInit(room,name); _fbActive=true;}
+  if(room.length>=4&&window._fbInit){
+    window._fbInit(room,name); _fbActive=true;
+    if(window._fbListenApproval){
+      const pKey=name.trim().replace(/[.#$\/\[\]]/g,'_');
+      window._fbListenApproval(room,pKey,(data)=>{
+        if(data.status==='approved'&&S.pendingIncome){
+          S.cash+=S.pendingIncome.amount;
+          S.pendingIncome=null;
+          window._fbClearApproval?.(room,pKey);
+          closeModal('m-quick-income');
+          save();fbSync();renderAll();
+          alert(L('qaGmApproved', data.amount));
+        } else if(data.status==='rejected'&&S.pendingIncome){
+          S.pendingIncome=null;
+          window._fbClearApproval?.(room,pKey);
+          const statusEl=document.getElementById('qi-gm-status');
+          const btnEl=document.getElementById('qi-confirm-btn');
+          if(statusEl){statusEl.textContent=L('qaGmRejected');statusEl.style.color='var(--red)';statusEl.classList.remove('hidden');}
+          if(btnEl){btnEl.disabled=false;btnEl.textContent=L('qaAddBtn');}
+        }
+      });
+    }
+  }
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('main-screen').classList.remove('hidden');
   save(); fbSync(); renderAll();
@@ -1007,26 +1128,8 @@ function renderBar(){
   const el=document.getElementById('bar-bal'); el.textContent=fmtS(b); el.className='sum-val '+(b>=0?'pos':'neg');
 }
 function rOv(){
-  const i=totalInc(),e=totalExp(),b=bal();
   document.getElementById('ov-cash').textContent=fmt(S.cash);
-  document.getElementById('ov-inc').textContent=fmt(i);
-  document.getElementById('ov-exp').textContent=fmt(e);
-  document.getElementById('ov-bal').textContent=fmtS(b);
-  document.getElementById('ov-bal-card').className='bal-card '+(b>=0?'pos':'neg');
-  const ic=document.getElementById('ov-edu-icon'),tx=document.getElementById('ov-edu-text'),sb=document.getElementById('ov-edu-sub');
-  const firstActive=activeStudies()[0];
-  const firstCompleted=completedStudies()[0];
-  const displayEdu=firstActive||firstCompleted;
-  if(displayEdu){
-    ic.textContent=displayEdu.type==='university'?'🎓':'🔧';
-    tx.textContent=(displayEdu.type==='university'?L('ovEduUni'):L('ovEduCol'))+' · '+(displayEdu.specialty?.name??'—');
-    if(!displayEdu.completed&&displayEdu.roundsLeft>0){const done=displayEdu.roundsTotal-displayEdu.roundsLeft;sb.textContent=L('ovEduProgress',done,displayEdu.roundsTotal);}
-    else if(displayEdu.completed){sb.textContent=L('ovEduDiploma');}
-    else{sb.textContent=L('ovEduDiploma');}
-  } else {
-    ic.textContent='🚶';tx.textContent=L('ovEduNone');sb.textContent=L('ovEduNoneSub');
-  }
-  renderStudyButtons();
+  renderStudyCompact();
 }
 function rInc(){
   const wrap=document.getElementById('inc-wrap');
@@ -1239,32 +1342,57 @@ function graduateStudy(eduId){
   alert(L('alertGraduate', edu.specialty?.name??''));
   save();fbSync();renderAll();
 }
-function renderStudyButtons(){
-  const container=document.getElementById('study-buttons-container');
-  if(!container)return;
+function renderStudyCompact(){
+  const block=document.getElementById('study-compact-block');
+  if(!block)return;
   const active=activeStudies();
-  const canAddMore=activeIncomeCount()<2;
-  let html='';
-  if(active.length===0){
-    html=`<button class="btn-round" onclick="openStartStudyModal()" style="color:var(--gold);border-color:rgba(245,166,35,0.4)">${L('ovStudyStartBtn')}</button>`;
-  } else {
-    html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-    active.forEach(edu=>{
-      const label=edu.roundsLeft>0?L('ovStudyDropBtn',edu.specialty?.name??'',edu.roundsLeft):L('ovStudyGradBtn',edu.specialty?.name??'');
-      const color=edu.roundsLeft>0?'color:var(--red);border-color:rgba(239,68,68,0.4)':'color:var(--green);border-color:rgba(34,197,94,0.4)';
-      const fn=edu.roundsLeft>0?`dropOutStudy('${edu.id}')`:`graduateStudy('${edu.id}')`;
-      html+=`<button class="btn-round" onclick="${fn}" style="font-size:12px;${color}">${label}</button>`;
-    });
-    if(canAddMore){html+=`<button class="btn-round" onclick="openStartStudyModal()" style="font-size:12px;color:var(--gold);border-color:rgba(245,166,35,0.4)">${L('ovStudyStartBtn')}</button>`;}
-    html+='</div>';
-  }
   const completed=completedStudies();
+  if(active.length===0&&completed.length===0){block.classList.add('hidden');return;}
+  block.classList.remove('hidden');
+  let html='';
+  active.forEach((edu,idx)=>{
+    const icon=edu.type==='university'?'🎓':'🔧';
+    const done=(edu.roundsTotal||0)-(edu.roundsLeft||0);
+    const total=edu.roundsTotal||0;
+    const pct=total>0?Math.round(done/total*100):0;
+    const specName=edu.specialty?.name??edu.type;
+    const isReady=edu.roundsLeft===0;
+    html+=`<div style="display:flex;align-items:center;gap:10px;${idx>0?'margin-top:10px;padding-top:10px;border-top:1px solid var(--border)':''}">
+      <div style="font-size:20px;flex-shrink:0">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${specName}</div>
+        <div style="font-size:10px;color:var(--sub);margin-top:1px">${isReady?'✅ Готово до завершення':`Раунд ${done}/${total}`}</div>
+        <div style="height:3px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;border-radius:3px;background:${isReady?'var(--green)':'var(--gold)'}"></div>
+        </div>
+      </div>
+      <button onclick="${isReady?`graduateStudy('${edu.id}')`:`dropOutStudy('${edu.id}')`}"
+              style="flex-shrink:0;background:none;cursor:pointer;
+                     border:1px solid ${isReady?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.25)'};
+                     border-radius:8px;padding:5px 10px;
+                     color:${isReady?'var(--green)':'var(--red)'};
+                     font-size:11px;font-weight:600;font-family:var(--body)">
+        ${isReady?'🎓 Диплом':'Закинути'}
+      </button>
+    </div>`;
+  });
   if(completed.length>0){
-    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    completed.forEach(edu=>{html+=`<div style="background:var(--green-dim);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--green)">✅ ${edu.specialty?.name??edu.type}</div>`;});
+    html+=`<div style="display:flex;flex-wrap:wrap;gap:5px;${active.length>0?'margin-top:8px;padding-top:8px;border-top:1px solid var(--border)':''}">`;
+    completed.forEach(edu=>{
+      html+=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--green)">✅ ${edu.specialty?.name??edu.type}</div>`;
+    });
     html+='</div>';
   }
-  container.innerHTML=html;
+  if(active.length<2){
+    html+=`<button onclick="openStartStudyModal()"
+            style="width:100%;margin-top:${(active.length+completed.length)>0?'10px':'0'};
+                   background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.2);
+                   border-radius:10px;padding:9px;color:var(--gold);font-family:var(--body);
+                   font-size:13px;font-weight:600;cursor:pointer">
+      📚 Почати навчання
+    </button>`;
+  }
+  block.innerHTML=html;
 }
 let _ssType=null,_ssSpec=null;
 function openStartStudyModal(){
@@ -1423,7 +1551,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
       S.loans.bankRem+=amount; S.cash+=amount;
       _pendingShortfall-=amount;
       save();fbSync();
-      if(_pendingShortfall<=0){_pendingShortfall=0;finishRound();}
+      if(_pendingShortfall<=0){_pendingShortfall=0;afterDebtResolved();}
       else{openDebtModal();}
     };
     box.appendChild(b);
@@ -1441,7 +1569,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
       _pendingShortfall-=amount;
       save();fbSync();
       if(S.loans.microRem>30000){showBankrupt();return;}
-      if(_pendingShortfall<=0){_pendingShortfall=0;finishRound();}
+      if(_pendingShortfall<=0){_pendingShortfall=0;afterDebtResolved();}
       else{openDebtModal();}
     };
     box.appendChild(b);
@@ -1462,12 +1590,91 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
       _pendingShortfall-=(bankPart+microPart);
       save();fbSync();
       if(S.loans.microRem>30000){showBankrupt();return;}
-      if(_pendingShortfall<=0){_pendingShortfall=0;finishRound();}
+      if(_pendingShortfall<=0){_pendingShortfall=0;afterDebtResolved();}
       else{openDebtModal();}
     };
     box.appendChild(b);
   }
 }
+function afterDebtResolved(){
+  if(_debtContext==='round_end'){
+    finishRound();
+  } else {
+    _pendingShortfall=0;
+    _debtContext='round_end';
+    closeModal('m-debt');
+    save();fbSync();renderAll();
+  }
+}
+
+function openQuickIncome(){
+  document.getElementById('qi-amount').value='';
+  document.getElementById('qi-desc').value='';
+  document.getElementById('qi-gm-warn').classList.add('hidden');
+  document.getElementById('qi-gm-status').classList.add('hidden');
+  document.getElementById('qi-confirm-btn').disabled=false;
+  document.getElementById('qi-confirm-btn').textContent=L('qaAddBtn');
+  openModal('m-quick-income');
+  setTimeout(()=>document.getElementById('qi-amount')?.focus(),100);
+}
+
+function onQiInput(val){
+  const amount=parseFloat(val)||0;
+  const inRoom=!!(S.roomCode&&_fbActive);
+  document.getElementById('qi-gm-warn').classList.toggle('hidden',!(amount>1000&&inRoom));
+}
+
+async function confirmQuickIncome(){
+  const amount=parseFloat(document.getElementById('qi-amount').value)||0;
+  const desc=document.getElementById('qi-desc').value.trim();
+  if(amount<=0){alert(L('qaAlertNoAmt'));return;}
+  const inRoom=!!(S.roomCode&&_fbActive);
+  if(amount>1000&&inRoom){
+    const btn=document.getElementById('qi-confirm-btn');
+    const status=document.getElementById('qi-gm-status');
+    btn.disabled=true;
+    btn.textContent=L('qaWaitGm');
+    status.textContent=L('qaGmPending');
+    status.style.color='var(--sub)';
+    status.classList.remove('hidden');
+    document.getElementById('qi-gm-warn').classList.add('hidden');
+    S.pendingIncome={amount,desc};
+    save();
+    const pKey=S.playerName.trim().replace(/[.#$\/\[\]]/g,'_');
+    await window._fbRequestIncomeApproval?.(S.roomCode,pKey,{playerName:S.playerName,amount,desc});
+    return;
+  }
+  S.cash+=amount;
+  S.pendingIncome=null;
+  closeModal('m-quick-income');
+  save();fbSync();renderAll();
+}
+
+function openQuickExpense(){
+  document.getElementById('qe-amount').value='';
+  document.getElementById('qe-error').classList.add('hidden');
+  openModal('m-quick-expense');
+  setTimeout(()=>document.getElementById('qe-amount')?.focus(),100);
+}
+
+function confirmQuickExpense(){
+  const amount=parseFloat(document.getElementById('qe-amount').value)||0;
+  const errEl=document.getElementById('qe-error');
+  if(amount<=0){errEl.textContent=L('qaErrNoAmt');errEl.classList.remove('hidden');return;}
+  if(S.cash>=amount){
+    S.cash-=amount;
+    closeModal('m-quick-expense');
+    save();fbSync();renderAll();
+  } else {
+    _balanceSnapshot=-amount;
+    _pendingShortfall=amount-S.cash;
+    S.cash=0;
+    _debtContext='quick_expense';
+    closeModal('m-quick-expense');
+    openDebtModal();
+  }
+}
+
 function resetGame(){
   if(confirm(L('alertResetConfirm'))){localStorage.clear();location.reload();}
 }
@@ -1560,7 +1767,30 @@ function init(){
   applyLang();
   applySelectOptions();
   if(load()&&S.playerName){
-    if(S.roomCode&&window._fbInit){window._fbInit(S.roomCode,S.playerName);_fbActive=true;}
+    if(S.roomCode&&window._fbInit){
+      window._fbInit(S.roomCode,S.playerName);
+      _fbActive=true;
+      if(window._fbListenApproval){
+        const pKey=S.playerName.trim().replace(/[.#$\/\[\]]/g,'_');
+        window._fbListenApproval(S.roomCode,pKey,(data)=>{
+          if(data.status==='approved'&&S.pendingIncome){
+            S.cash+=S.pendingIncome.amount;
+            S.pendingIncome=null;
+            window._fbClearApproval?.(S.roomCode,pKey);
+            closeModal('m-quick-income');
+            save();fbSync();renderAll();
+            alert(L('qaGmApproved', data.amount));
+          } else if(data.status==='rejected'&&S.pendingIncome){
+            S.pendingIncome=null;
+            window._fbClearApproval?.(S.roomCode,pKey);
+            const statusEl=document.getElementById('qi-gm-status');
+            const btnEl=document.getElementById('qi-confirm-btn');
+            if(statusEl){statusEl.textContent=L('qaGmRejected');statusEl.style.color='var(--red)';statusEl.classList.remove('hidden');}
+            if(btnEl){btnEl.disabled=false;btnEl.textContent=L('qaAddBtn');}
+          }
+        });
+      }
+    }
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('main-screen').classList.remove('hidden');
     renderAll();

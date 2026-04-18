@@ -47,7 +47,7 @@ const LANGS = {
     ovIncLabel:    'Дохід / раунд',
     ovExpLabel:    'Витрати / раунд',
     ovBalLabel:    'Сальдо',
-    ovEndRoundBtn: 'Завершити раунд →',
+    ovEndRoundBtn: 'Завершити місяць →',
     ovEduUni:      'Університет',
     ovEduCol:      'Технікум',
     ovEduNone:     'Без освіти',
@@ -184,7 +184,7 @@ const LANGS = {
     mTrnBizLabel:   'Множник для бізнесу (×)',
 
     // ── End round modal ──
-    mEndTitle:      (n) => `Завершити Раунд ${n}`,
+    mEndTitle:      (n) => `Завершити місяць ${n}`,
     mEndCurLabel:   'Поточна готівка:',
     mEndIncLabel:   '+ Доходи:',
     mEndExpLabel:   '− Витрати:',
@@ -358,6 +358,25 @@ const LANGS = {
     incTypePassive:  'Пасивний',
     incTypeStipend:  'Стипендія',
 
+    // ── Quick income / expense ──
+    qaIncomeBtn:    'Дохід',
+    qaExpenseBtn:   'Витрата',
+    qaIncomeTitle:  '💰 Разовий дохід',
+    qaExpenseTitle: '💸 Разова витрата',
+    qaAmtLabel:     'Сума ($)',
+    qaDescLabel:    "Опис (необов'язково)",
+    qaDescPh:       'напр. Продав річ',
+    qaGmWarn:       '⚠️ Сума понад $1,000 — потрібне підтвердження Гейм Майстра.',
+    qaAddBtn:       'Додати до готівки',
+    qaExpenseInfo:  'Якщо готівки не вистачає — запропонуємо взяти кредит.',
+    qaDeductBtn:    'Списати',
+    qaAlertNoAmt:   'Введіть суму!',
+    qaWaitGm:       'Очікуємо GM...',
+    qaGmPending:    '⏳ Запит відправлено GM. Очікуємо підтвердження...',
+    qaGmApproved:   (amt) => `✅ GM підтвердив! +$${amt} додано до готівки.`,
+    qaGmRejected:   '❌ GM відхилив операцію.',
+    qaErrNoAmt:     '❌ Введіть суму',
+
     // ── Tooltips ──
     passiveBadgeTitle: 'Натисни для деталей',
     resetTitle:        'Скинути гру',
@@ -406,7 +425,7 @@ const LANGS = {
     ovIncLabel:    'Доход / раунд',
     ovExpLabel:    'Расходы / раунд',
     ovBalLabel:    'Сальдо',
-    ovEndRoundBtn: 'Завершить раунд →',
+    ovEndRoundBtn: 'Завершить месяц →',
     ovEduUni:      'Университет',
     ovEduCol:      'Техникум',
     ovEduNone:     'Без образования',
@@ -543,7 +562,7 @@ const LANGS = {
     mTrnBizLabel:   'Множитель для бизнеса (×)',
 
     // ── End round modal ──
-    mEndTitle:      (n) => `Завершить Раунд ${n}`,
+    mEndTitle:      (n) => `Завершить месяц ${n}`,
     mEndCurLabel:   'Текущие наличные:',
     mEndIncLabel:   '+ Доходы:',
     mEndExpLabel:   '− Расходы:',
@@ -716,6 +735,25 @@ const LANGS = {
     incTypeSelf:     'На себя',
     incTypePassive:  'Пассивный',
     incTypeStipend:  'Стипендия',
+
+    // ── Quick income / expense ──
+    qaIncomeBtn:    'Доход',
+    qaExpenseBtn:   'Расход',
+    qaIncomeTitle:  '💰 Разовый доход',
+    qaExpenseTitle: '💸 Разовый расход',
+    qaAmtLabel:     'Сумма ($)',
+    qaDescLabel:    'Описание (необязательно)',
+    qaDescPh:       'напр. Продал вещь',
+    qaGmWarn:       '⚠️ Сумма свыше $1,000 — требуется подтверждение Гейм Мастера.',
+    qaAddBtn:       'Добавить к наличным',
+    qaExpenseInfo:  'Если наличных не хватает — предложим взять кредит.',
+    qaDeductBtn:    'Списать',
+    qaAlertNoAmt:   'Введите сумму!',
+    qaWaitGm:       'Ожидаем GM...',
+    qaGmPending:    '⏳ Запрос отправлен GM. Ожидаем подтверждения...',
+    qaGmApproved:   (amt) => `✅ GM подтвердил! +$${amt} добавлено к наличным.`,
+    qaGmRejected:   '❌ GM отклонил операцию.',
+    qaErrNoAmt:     '❌ Введите сумму',
 
     // ── Tooltips ──
     passiveBadgeTitle: 'Нажми для деталей',
