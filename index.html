@@ -728,6 +728,7 @@
       </select></div>
     <div class="f-field"><label class="f-label" data-i18n="mIncBaseLabel">Базова оплата ($)</label><input type="number" class="f-input" id="mi-base" placeholder="0" min="0"></div>
     <div class="f-field" id="mi-field-block"><label class="f-label" data-i18n="mIncFieldLabel">Сфера (для курсів)</label><input type="text" class="f-input" id="mi-field" data-i18n-ph="mIncFieldPh" placeholder="напр. Фінанси, IT, Медицина…" autocomplete="off"></div>
+    <div class="f-field hidden" id="mi-subfield-block"><label class="f-label" data-i18n="mIncSubFieldLabel">Під-сфера (необов'язково)</label><input type="text" class="f-input" id="mi-subfield" data-i18n-ph="mIncSubFieldPh" placeholder="напр. Java, Python…" autocomplete="off"></div>
     <div class="f-field hidden" id="mi-condition-block">
       <label class="f-label" data-i18n="mIncCondLabel">Умова для запуску (необов'язково)</label>
       <select class="f-select" id="mi-condition-type" onchange="onConditionTypeChange(this.value)">
@@ -773,6 +774,7 @@
     <div class="modal-title" data-i18n="mCrsTitle">Новий курс</div>
     <div class="f-field"><label class="f-label" data-i18n="mCrsNameLabel">Назва курсу</label><input type="text" class="f-input" id="mc-name" data-i18n-ph="mCrsNamePh" placeholder="напр. Excel Advanced" autocomplete="off"></div>
     <div class="f-field"><label class="f-label" data-i18n="mCrsFieldLabel">Сфера застосування</label><input type="text" class="f-input" id="mc-field" data-i18n-ph="mCrsFieldPh" placeholder="напр. Фінанси, IT…" autocomplete="off"></div>
+    <div class="f-field"><label class="f-label" data-i18n="mCrsSubFieldLabel">Під-сфера (необов'язково)</label><input type="text" class="f-input" id="mc-subfield" data-i18n-ph="mCrsSubFieldPh" placeholder="напр. Java, Python…" autocomplete="off"></div>
     <div class="f-field"><label class="f-label" data-i18n="mCrsPayLabel">Додаткова оплата ($)</label><input type="number" class="f-input" id="mc-pay" placeholder="0" min="0"></div>
     <button class="btn-primary" onclick="saveCourse()" data-i18n="save">Зберегти</button>
     <button class="btn-cancel"  onclick="closeModal('m-crs')" data-i18n="cancel">Скасувати</button>
@@ -1141,7 +1143,7 @@ function startGame(){
 }
 
 /* ── Calc ── */
-function addPay(inc){ if(!inc.field)return 0; return S.courses.filter(c=>c.field.trim().toLowerCase()===inc.field.trim().toLowerCase()).reduce((s,c)=>s+(parseFloat(c.pay)||0),0); }
+function addPay(inc){ if(!inc.field)return 0; return S.courses.filter(c=>{if(c.field.trim().toLowerCase()!==inc.field.trim().toLowerCase())return false;const cSub=(c.subField||'').trim().toLowerCase();const iSub=(inc.subField||'').trim().toLowerCase();if(cSub&&iSub&&cSub===iSub)return false;return true;}).reduce((s,c)=>s+(parseFloat(c.pay)||0),0); }
 function mult(inc){ const bonusSum=S.trainings.reduce((sum,t)=>{ const v=inc.type==='employee'?t.mEmp:inc.type==='self'?t.mSelf:inc.type==='passive'?t.mBiz:1; return sum+((parseFloat(v)||1)-1); },0); return 1+bonusSum; }
 function fi(inc){ const base=parseFloat(inc.basePay)||0; return (base*mult(inc))+addPay(inc); }
 function totalInc(){ return S.incomes.reduce((s,i)=>s+fi(i),0); }
@@ -1245,7 +1247,7 @@ function rInc(){
     const ap=addPay(inc),mx=mult(inc),f=fi(inc);
     let sub=inc.type==='employee'||inc.type==='self'?L('incTypeEmployee'):inc.type==='stipend'?L('incTypeStipend'):L('incTypePassive');
     if(inc.type==='passive'&&inc.condition){sub+=L('incCondPrefix')+inc.condition.label;}
-    else if(inc.type!=='passive'&&inc.field){sub+=' · '+inc.field;}
+    else if(inc.type!=='passive'&&inc.field){const fieldStr=[inc.field,inc.subField].filter(Boolean).join(' / ');sub+=' · '+fieldStr;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
     const multEl=mx>1?`<div class="col-r"><span class="mult-link" onclick="showMultBreakdown('${inc.id}')">×${mx.toFixed(2)}</span></div>`:`<div class="col-r sub">×${mx.toFixed(2)}</div>`;
     return `<div class="inc-row"><div><div class="row-name">${inc.name}</div><div class="row-type">${sub}</div></div><div class="col-r">$${(parseFloat(inc.basePay)||0).toFixed(0)}</div>${multEl}<div class="col-r gold">+$${ap.toFixed(0)}</div><div class="col-final">$${f.toFixed(0)}</div>${delBtn}</div>`;
@@ -1402,6 +1404,7 @@ function openAddIncomeModal(){
   document.getElementById('mi-name').value='';
   document.getElementById('mi-base').value='';
   document.getElementById('mi-field').value='';
+  document.getElementById('mi-subfield').value='';
   document.getElementById('mi-condition-type').value='';
   document.getElementById('mi-condition-edu-block').classList.add('hidden');
   document.getElementById('mi-condition-exp-block').classList.add('hidden');
@@ -1421,6 +1424,7 @@ function openAddIncomeModal(){
 function onIncomeTypeChange(type){
   const isPassive=type==='passive';
   document.getElementById('mi-field-block').classList.toggle('hidden',isPassive);
+  document.getElementById('mi-subfield-block').classList.toggle('hidden',isPassive);
   document.getElementById('mi-condition-block').classList.toggle('hidden',!isPassive);
   document.getElementById('mi-condition-type').value='';
   document.getElementById('mi-condition-edu-block').classList.add('hidden');
@@ -1548,7 +1552,7 @@ function saveIncome(){
   if(!n){alert(L('alertEnterName2'));return;}
   const type=document.getElementById('mi-type').value;
   if((type==='employee'||type==='self')&&activeIncomeCount()>=2){alert(L('alertIncomeLimit'));return;}
-  const inc={id:'i'+Date.now(),type,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim(),condition:null};
+  const inc={id:'i'+Date.now(),type,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim(),subField:document.getElementById('mi-subfield').value.trim(),condition:null};
   if(type==='passive'){
     inc.field='';
     const condType=document.getElementById('mi-condition-type').value;
@@ -1565,6 +1569,7 @@ function delIncome(id){
 function openAddCourseModal(){
   document.getElementById('mc-name').value='';
   document.getElementById('mc-field').value='';
+  document.getElementById('mc-subfield').value='';
   document.getElementById('mc-pay').value='';
   openModal('m-crs');
 }
@@ -1575,7 +1580,7 @@ function openAddTrainingModal(){
   document.getElementById('mt-biz').value='';
   openModal('m-trn');
 }
-function saveCourse(){const n=document.getElementById('mc-name').value.trim();if(!n){alert(L('alertEnterName2'));return;}S.courses.push({id:'c'+Date.now(),name:n,field:document.getElementById('mc-field').value.trim(),pay:parseFloat(document.getElementById('mc-pay').value)||0});closeModal('m-crs');save();fbSync();renderAll();}
+function saveCourse(){const n=document.getElementById('mc-name').value.trim();if(!n){alert(L('alertEnterName2'));return;}S.courses.push({id:'c'+Date.now(),name:n,field:document.getElementById('mc-field').value.trim(),subField:document.getElementById('mc-subfield').value.trim(),pay:parseFloat(document.getElementById('mc-pay').value)||0});closeModal('m-crs');save();fbSync();renderAll();}
 function delCourse(id){S.courses=S.courses.filter(c=>c.id!==id);save();fbSync();renderAll();}
 function saveTraining(){const n=document.getElementById('mt-name').value.trim();if(!n){alert(L('alertEnterName2'));return;}S.trainings.push({id:'t'+Date.now(),name:n,mEmp:parseFloat(document.getElementById('mt-emp').value)||1,mSelf:parseFloat(document.getElementById('mt-self').value)||1,mBiz:parseFloat(document.getElementById('mt-biz').value)||1});closeModal('m-trn');save();fbSync();renderAll();}
 function delTraining(id){S.trainings=S.trainings.filter(t=>t.id!==id);save();fbSync();renderAll();}
