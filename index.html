@@ -303,6 +303,29 @@
     .btn-repay { background:var(--green-dim); color:var(--green); border:1px solid rgba(34,197,94,0.3); border-radius:10px; padding:8px 16px; font-family:var(--body); font-size:13px; font-weight:600; cursor:pointer; }
     .btn-repay:disabled { opacity:0.3; cursor:not-allowed; }
 
+    /* Deals */
+    .deal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+    .deal-card.deal-ready     { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.04); }
+    .deal-card.deal-completed { opacity: 0.45; }
+    .deal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .deal-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .deal-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; flex-shrink: 0; }
+    .deal-status-active    { background:rgba(96,165,250,0.12); color:var(--blue);  border:1px solid rgba(96,165,250,0.25); }
+    .deal-status-ready     { background:rgba(34,197,94,0.12);  color:var(--green); border:1px solid rgba(34,197,94,0.3); }
+    .deal-status-completed { background:var(--elevated); color:var(--sub); border:1px solid var(--border); }
+    .deal-amounts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .deal-amount-item { background: var(--elevated); border-radius: 9px; padding: 8px 10px; }
+    .deal-amount-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); }
+    .deal-amount-val { font-family: var(--mono); font-size: 15px; font-weight: 600; margin-top: 2px; }
+    .deal-progress { margin-bottom: 8px; }
+    .deal-progress-top { display: flex; justify-content: space-between; font-size: 11px; color: var(--sub); margin-bottom: 5px; }
+    .deal-progress-track { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .deal-progress-fill  { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .btn-collect { width: 100%; background: var(--green-dim); border: 1px solid rgba(34,197,94,0.35); border-radius: 10px; padding: 11px; color: var(--green); font-family: var(--body); font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.1s; margin-top: 4px; }
+    .btn-collect:active { transform: scale(0.98); background: rgba(34,197,94,0.18); }
+    .btn-deal-cancel { background: none; border: none; color: var(--sub); cursor: pointer; padding: 4px; font-size: 15px; margin-left: 6px; }
+    .btn-deal-cancel:active { color: var(--red); }
+
     /* Courses / Trainings */
     .gen-tbl { background: rgba(17,20,32,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
     .gen-head { background:var(--elevated); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; color:var(--sub); border-bottom:1px solid var(--border); }
@@ -463,6 +486,15 @@
       <div class="sec-hdr"><div class="sec-title" data-i18n="incTitle">Доходи</div><button class="btn-add" onclick="openAddIncomeModal()" data-i18n="incAddBtn">+ Додати</button></div>
       <div id="inc-wrap"></div>
       <div class="total-row"><div class="total-lbl" data-i18n="incTotalLabel">Усього доходів</div><div class="total-val green" id="inc-total">$0</div></div>
+
+      <div class="sec-hdr" style="margin-top:8px">
+        <div class="sec-title" data-i18n="dealsTitle">Угоди</div>
+        <button class="btn-add" onclick="openDealModal()" data-i18n="dealsAddBtn">+ Укласти</button>
+      </div>
+      <div class="info-badge" data-i18n-html="dealsInfoHtml">
+        Угода типу <strong>Купи-Продай</strong>: вкладаєш кошти зараз, отримуєш прибуток після закінчення терміну.
+      </div>
+      <div id="deals-list"></div>
     </div>
 
     <!-- EXPENSES -->
@@ -875,6 +907,63 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="m-deal"
+     onclick="overlayClose(event,'m-deal')">
+  <div class="modal">
+    <div class="modal-title" data-i18n="mDealTitle">🤝 Угода</div>
+    <div class="info-badge" style="margin-bottom:14px" data-i18n="mDealCreditInfo">
+      Якщо коштів не вистачає — запропонуємо взяти кредит.
+    </div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="mDealNameLabel">Назва угоди</label>
+      <input type="text" class="f-input" id="dl-name"
+             data-i18n-ph="mDealNamePh" placeholder="напр. Перепродаж авто"
+             autocomplete="off" maxlength="40">
+    </div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="mDealInvLabel">Сума вкладення ($)</label>
+      <input type="number" class="f-input" id="dl-invested"
+             placeholder="0" min="1" oninput="updateDealPreview()">
+    </div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="mDealProfLabel">Сума прибутку ($)</label>
+      <input type="number" class="f-input" id="dl-profit"
+             placeholder="0" min="0" oninput="updateDealPreview()">
+    </div>
+    <div class="f-field">
+      <label class="f-label" data-i18n="mDealTermLabel">Термін (місяців / раундів)</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="counter-btn" onclick="stepDealTerm(-1)">−</button>
+        <span class="counter-val mono" id="dl-term-val">1</span>
+        <button class="counter-btn" onclick="stepDealTerm(1)">+</button>
+        <span style="font-size:13px;color:var(--sub)" data-i18n="mDealMonths">міс.</span>
+      </div>
+    </div>
+    <div style="background:var(--elevated);border-radius:10px;padding:12px 14px;margin-bottom:16px" id="dl-preview">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span class="sub" data-i18n="mDealCostLbl">Спишеться зараз:</span>
+        <span class="mono red" id="dl-preview-cost">$0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span class="sub" data-i18n="mDealGetLbl">Отримаєш через:</span>
+        <span class="mono" id="dl-preview-term">1 міс.</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px">
+        <span class="sub" data-i18n="mDealNetLbl">Чистий прибуток:</span>
+        <span class="mono green" id="dl-preview-profit">+$0</span>
+      </div>
+    </div>
+    <div class="info-badge hidden" id="dl-error"
+         style="color:var(--red);border-color:rgba(239,68,68,0.3);margin-bottom:12px"></div>
+    <button class="btn-primary" onclick="confirmDeal()" data-i18n="mDealConfirmBtn">
+      Укласти угоду
+    </button>
+    <button class="btn-cancel" onclick="closeModal('m-deal')" data-i18n="cancel">
+      Скасувати
+    </button>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="m-quick-income"
      onclick="overlayClose(event,'m-quick-income')">
   <div class="modal">
@@ -953,7 +1042,7 @@ let S={
   incomes:[],
   exp:{housingLabel:'Гуртожиток',housingBase:0,housingType:'self',food:0,comm:0,transport:0,hasWife:false,wifeAmt:0,kids:0,kidCost:0},
   loans:{bankAmt:0,bankRem:0,microAmt:0,microRem:0},
-  courses:[],trainings:[],tab:'ov',
+  courses:[],trainings:[],deals:[],tab:'ov',
 };
 
 function activeStudies(){return(S.educations||[]).filter(e=>!e.completed);}
@@ -1061,7 +1150,7 @@ function fmt(n){ return '$'+Math.abs(n).toFixed(0); }
 function fmtS(n){ return (n>=0?'+':'−')+fmt(n); }
 
 /* ── Render ── */
-function renderAll(){ renderHdr(); renderBar(); const t=S.tab; if(t==='ov')rOv(); if(t==='inc')rInc(); if(t==='exp')rExp(); if(t==='crs')rCrs(); if(t==='trn')rTrn(); }
+function renderAll(){ renderHdr(); renderBar(); const t=S.tab; if(t==='ov')rOv(); if(t==='inc'){rInc();renderDeals();} if(t==='exp')rExp(); if(t==='crs')rCrs(); if(t==='trn')rTrn(); }
 function renderHdr(){
   document.getElementById('hdr-name').textContent=S.playerName;
   document.getElementById('hdr-round').textContent=L('hdrRoundBadge',S.round);
@@ -1080,6 +1169,20 @@ function renderHdr(){
     else if(passive>=20000){badgeEl.classList.add('near-goal');}
   } else {
     badgeEl.style.display='none';
+  }
+  const hasReadyDeal=(S.deals||[]).some(d=>d.status==='ready');
+  const incTab=document.getElementById('btab-inc');
+  if(incTab){
+    let dot=incTab.querySelector('.btab-notify');
+    if(hasReadyDeal&&!dot){
+      dot=document.createElement('div');
+      dot.className='btab-notify';
+      dot.style.cssText='position:absolute;top:2px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--green);border:1.5px solid var(--bg)';
+      incTab.style.position='relative';
+      incTab.appendChild(dot);
+    } else if(!hasReadyDeal&&dot){
+      dot.remove();
+    }
   }
 }
 function showPassiveInfo(){
@@ -1494,6 +1597,12 @@ function finishRound(){
   S.cash+=_balanceSnapshot;S.round++;
   _pendingShortfall=0;_balanceSnapshot=0;
   (S.educations||[]).forEach(edu=>{if(!edu.completed&&edu.roundsLeft>0)edu.roundsLeft--;});
+  (S.deals||[]).forEach(deal=>{
+    if(deal.status==='active'&&deal.termLeft>0){
+      deal.termLeft--;
+      if(deal.termLeft===0)deal.status='ready';
+    }
+  });
   closeModal('m-debt');closeModal('m-end');
   save();fbSync();renderAll();
   const passive=totalPassiveInc();
@@ -1599,12 +1708,134 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
 function afterDebtResolved(){
   if(_debtContext==='round_end'){
     finishRound();
-  } else {
+  } else if(_debtContext==='quick_expense'){
+    _pendingShortfall=0;
+    _debtContext='round_end';
+    closeModal('m-debt');
+    save();fbSync();renderAll();
+  } else if(_debtContext==='deal'){
+    if(_pendingDeal){
+      S.deals=S.deals||[];
+      S.deals.push(_pendingDeal);
+      _pendingDeal=null;
+    }
     _pendingShortfall=0;
     _debtContext='round_end';
     closeModal('m-debt');
     save();fbSync();renderAll();
   }
+}
+
+let _dealTerm=1;
+let _pendingDeal=null;
+
+function openDealModal(){
+  _dealTerm=1;
+  document.getElementById('dl-name').value='';
+  document.getElementById('dl-invested').value='';
+  document.getElementById('dl-profit').value='';
+  document.getElementById('dl-term-val').textContent='1';
+  document.getElementById('dl-error').classList.add('hidden');
+  updateDealPreview();
+  openModal('m-deal');
+  setTimeout(()=>document.getElementById('dl-name')?.focus(),100);
+}
+
+function stepDealTerm(d){
+  _dealTerm=Math.max(1,Math.min(12,_dealTerm+d));
+  document.getElementById('dl-term-val').textContent=_dealTerm;
+  updateDealPreview();
+}
+
+function updateDealPreview(){
+  const invested=parseFloat(document.getElementById('dl-invested')?.value)||0;
+  const profit=parseFloat(document.getElementById('dl-profit')?.value)||0;
+  document.getElementById('dl-preview-cost').textContent='-$'+invested.toFixed(0);
+  document.getElementById('dl-preview-term').textContent=_dealTerm+' '+L('mDealMonths');
+  document.getElementById('dl-preview-profit').textContent='+$'+profit.toFixed(0);
+}
+
+function confirmDeal(){
+  const name=document.getElementById('dl-name').value.trim();
+  const invested=parseFloat(document.getElementById('dl-invested').value)||0;
+  const profit=parseFloat(document.getElementById('dl-profit').value)||0;
+  const errEl=document.getElementById('dl-error');
+  errEl.classList.add('hidden');
+  if(!name){errEl.textContent=L('mDealErrName');errEl.classList.remove('hidden');return;}
+  if(invested<=0){errEl.textContent=L('mDealErrInv');errEl.classList.remove('hidden');return;}
+  if(profit<0){errEl.textContent=L('mDealErrProfit');errEl.classList.remove('hidden');return;}
+  const deal={id:'deal_'+Date.now(),name,invested,profit,termTotal:_dealTerm,termLeft:_dealTerm,status:'active'};
+  if(S.cash>=invested){
+    S.cash-=invested;
+    S.deals=S.deals||[];
+    S.deals.push(deal);
+    closeModal('m-deal');
+    save();fbSync();renderAll();
+  } else {
+    _pendingDeal=deal;
+    _balanceSnapshot=-invested;
+    _pendingShortfall=invested-S.cash;
+    S.cash=0;
+    _debtContext='deal';
+    closeModal('m-deal');
+    openDebtModal();
+  }
+}
+
+function collectDeal(dealId){
+  const deal=(S.deals||[]).find(d=>d.id===dealId);
+  if(!deal||deal.status!=='ready')return;
+  S.cash+=deal.profit||0;
+  deal.status='completed';
+  save();fbSync();renderAll();
+  if((deal.profit||0)>0)alert(L('alertDealCollect',deal.name,deal.profit));
+}
+
+function renderDeals(){
+  const el=document.getElementById('deals-list');
+  if(!el)return;
+  const active=(S.deals||[]).filter(d=>d.status!=='completed');
+  if(active.length===0){
+    el.innerHTML=`<div class="empty-msg" style="padding:16px 0">${L('dealsEmpty')}</div>`;
+    return;
+  }
+  el.innerHTML=active.map(deal=>{
+    const done=deal.termTotal-deal.termLeft;
+    const pct=deal.termTotal>0?Math.round(done/deal.termTotal*100):100;
+    const isReady=deal.status==='ready';
+    const statusLabel=isReady?L('dealStatusReady'):L('dealStatusActive',done,deal.termTotal);
+    const statusClass=isReady?'deal-status-ready':'deal-status-active';
+    const barColor=isReady?'var(--green)':'var(--blue)';
+    const cardClass=isReady?'deal-card deal-ready':'deal-card';
+    return `<div class="${cardClass}" id="deal-${deal.id}">
+      <div class="deal-header">
+        <div class="deal-name">${deal.name}</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="deal-status-badge ${statusClass}">${statusLabel}</div>
+        </div>
+      </div>
+      <div class="deal-amounts">
+        <div class="deal-amount-item">
+          <div class="deal-amount-lbl">${L('dealLblInvested')}</div>
+          <div class="deal-amount-val red">$${(deal.invested||0).toFixed(0)}</div>
+        </div>
+        <div class="deal-amount-item">
+          <div class="deal-amount-lbl">${L('dealLblProfit')}</div>
+          <div class="deal-amount-val green">+$${(deal.profit||0).toFixed(0)}</div>
+        </div>
+      </div>
+      <div class="deal-progress">
+        <div class="deal-progress-top">
+          <span>${L('dealLblTerm')}</span>
+          <span class="mono">${L('dealTermDisplay',done,deal.termTotal)}</span>
+        </div>
+        <div class="deal-progress-track">
+          <div class="deal-progress-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+      </div>
+      ${isReady?`<button class="btn-collect" onclick="collectDeal('${deal.id}')">${L('dealCollectBtn',(deal.profit||0).toFixed(0))}</button>`:''}
+    </div>`;
+  }).join('');
 }
 
 function openQuickIncome(){
