@@ -642,7 +642,7 @@
         <circle cx="11" cy="22" r="1.5" fill="currentColor"/>
         <path d="M14.5 22 L19 22" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
       </svg>
-      <div class="btab-lbl">Звіт</div>
+      <div class="btab-lbl" data-i18n="tabOv">Звіт</div>
     </div>
 
     <!-- Доходи -->
@@ -656,7 +656,7 @@
         <path d="M16 16 L16 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M12 11 L16 7 L20 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <div class="btab-lbl">Доходи</div>
+      <div class="btab-lbl" data-i18n="tabInc">Доходи</div>
     </div>
 
     <!-- Витрати -->
@@ -670,7 +670,7 @@
         <path d="M16 16 L16 25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M12 21 L16 25 L20 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <div class="btab-lbl">Витрати</div>
+      <div class="btab-lbl" data-i18n="tabExp">Витрати</div>
     </div>
 
     <!-- Курси -->
@@ -683,7 +683,7 @@
         <path d="M6 19.5 L26 19.5" stroke="currentColor" stroke-width="1.5"/>
         <rect x="13.5" y="17.5" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.2"/>
       </svg>
-      <div class="btab-lbl">Курси</div>
+      <div class="btab-lbl" data-i18n="tabCrs">Курси</div>
     </div>
 
     <!-- Тренінги -->
@@ -701,7 +701,7 @@
         <path d="M20 22 L19 25 L22 24"
               stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <div class="btab-lbl">Тренінги</div>
+      <div class="btab-lbl" data-i18n="tabTrn">Тренінги</div>
     </div>
 
   </nav>
@@ -1027,19 +1027,20 @@
 <!-- ══ LOGIC ══ -->
 <script>
 const UNI_SPECS=[
-  {id:'eco',name:'Економічний',  icon:'📊',field:'Економіка'},
-  {id:'law',name:'Юридичний',    icon:'⚖️',field:'Право'},
-  {id:'hum',name:'Гуманітарний', icon:'📚',field:'Гуманітарні науки'},
-  {id:'med',name:'Медицина',icon:'🏥',field:'Медицина'},
+  {id:'eco',nameKey:'specUniEco',name:'Економічний',  icon:'📊',field:'Економіка'},
+  {id:'law',nameKey:'specUniLaw',name:'Юридичний',    icon:'⚖️',field:'Право'},
+  {id:'hum',nameKey:'specUniHum',name:'Гуманітарний', icon:'📚',field:'Гуманітарні науки'},
+  {id:'med',nameKey:'specUniMed',name:'Медицина',     icon:'🏥',field:'Медицина'},
 ];
 const COL_SPECS=[
-  {id:'mech',  name:'Механік',    icon:'⚙️', field:'Механіка'},
-  {id:'cook',  name:'Кухар',      icon:'👨‍🍳',field:'Кулінарія'},
-  {id:'tailor',name:'Швея',       icon:'🧵', field:'Швейна справа'},
-  {id:'elec',  name:'Електрик',   icon:'⚡',  field:'Електрика'},
-  {id:'build', name:'Будівельник',icon:'🏗️', field:'Будівництво'},
-  {id:'auto',  name:'Автомеханік',icon:'🚗', field:'Автосправа'},
+  {id:'mech',  nameKey:'specColMech',  name:'Механік',    icon:'⚙️', field:'Механіка'},
+  {id:'cook',  nameKey:'specColCook',  name:'Кухар',      icon:'👨‍🍳',field:'Кулінарія'},
+  {id:'tailor',nameKey:'specColTailor',name:'Швея',       icon:'🧵', field:'Швейна справа'},
+  {id:'elec',  nameKey:'specColElec',  name:'Електрик',   icon:'⚡',  field:'Електрика'},
+  {id:'build', nameKey:'specColBuild', name:'Будівельник',icon:'🏗️', field:'Будівництво'},
+  {id:'auto',  nameKey:'specColAuto',  name:'Автомеханік',icon:'🚗', field:'Автосправа'},
 ];
+function getSpecName(spec){return spec?.nameKey?L(spec.nameKey):(spec?.name??'');}
 
 let S={
   playerName:'',roomCode:'',cash:500,round:1,pendingIncome:null,
@@ -1082,7 +1083,7 @@ function pickEdu(type){
   document.getElementById('spec-label').textContent=type==='university'?L('setupSpecUni'):L('setupSpecCol');
   _setupSpec=null;
   document.getElementById('spec-list').innerHTML=(type==='university'?UNI_SPECS:COL_SPECS).map(s=>
-    `<div class="spec-item" id="si-${s.id}" onclick="pickSpec('${s.id}')"><span>${s.icon}</span><span>${s.name}</span></div>`
+    `<div class="spec-item" id="si-${s.id}" onclick="pickSpec('${s.id}')"><span>${s.icon}</span><span>${getSpecName(s)}</span></div>`
   ).join('');
 }
 
@@ -1437,7 +1438,7 @@ function onConditionTypeChange(val){
 function dropOutStudy(eduId){
   const edu=(S.educations||[]).find(e=>e.id===eduId);
   if(!edu)return;
-  if(!confirm(L('alertDropStudy', edu.specialty?.name??'')))return;
+  if(!confirm(L('alertDropStudy', getSpecName(edu.specialty))))return;
   S.incomes=S.incomes.filter(i=>i.id!==edu.stipendId);
   S.educations=S.educations.filter(e=>e.id!==eduId);
   if(activeStudies().length===0){S.exp.housingLabel='Квартира';S.exp.housingBase=200;S.exp.transport=40;}
@@ -1449,7 +1450,7 @@ function graduateStudy(eduId){
   edu.completed=true;edu.roundsLeft=0;
   S.incomes=S.incomes.filter(i=>i.id!==edu.stipendId);
   if(activeStudies().length===0){S.exp.housingLabel='Квартира';S.exp.housingBase=200;S.exp.transport=40;}
-  alert(L('alertGraduate', edu.specialty?.name??''));
+  alert(L('alertGraduate', getSpecName(edu.specialty)));
   save();fbSync();renderAll();
 }
 function renderStudyCompact(){
@@ -1469,7 +1470,7 @@ function renderStudyCompact(){
     const done=(edu.roundsTotal||0)-(edu.roundsLeft||0);
     const total=edu.roundsTotal||0;
     const pct=total>0?Math.round(done/total*100):0;
-    const specName=edu.specialty?.name??edu.type;
+    const specName=getSpecName(edu.specialty)||edu.type;
     const isReady=edu.roundsLeft===0;
     html+=`<div style="display:flex;align-items:center;gap:10px;${idx>0?'margin-top:10px;padding-top:10px;border-top:1px solid var(--border)':''}">
       <div style="font-size:20px;flex-shrink:0">${icon}</div>
@@ -1486,14 +1487,14 @@ function renderStudyCompact(){
                      border-radius:8px;padding:5px 10px;
                      color:${isReady?'var(--green)':'var(--red)'};
                      font-size:11px;font-weight:600;font-family:var(--body)">
-        ${isReady?'🎓 Диплом':'Закинути'}
+        ${isReady?L('ovStudyGradBtnShort'):L('ovStudyDropBtnShort')}
       </button>
     </div>`;
   });
   if(completed.length>0){
     html+=`<div style="display:flex;flex-wrap:wrap;gap:5px;${active.length>0?'margin-top:8px;padding-top:8px;border-top:1px solid var(--border)':''}">`;
     completed.forEach(edu=>{
-      html+=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--green)">✅ ${edu.specialty?.name??edu.type}</div>`;
+      html+=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--green)">✅ ${getSpecName(edu.specialty)||edu.type}</div>`;
     });
     html+='</div>';
   }
@@ -1503,7 +1504,7 @@ function renderStudyCompact(){
                    background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.2);
                    border-radius:10px;padding:9px;color:var(--gold);font-family:var(--body);
                    font-size:13px;font-weight:600;cursor:pointer">
-      📚 Почати навчання
+      ${L('ovStudyStartBtn')}
     </button>`;
   }
   block.innerHTML=html;
@@ -1513,7 +1514,7 @@ function openStartStudyModal(){
   if(activeIncomeCount()>=2){alert(L('alertNoSlot'));return;}
   _ssType=null;_ssSpec=null;
   ['ss-btn-uni','ss-btn-col'].forEach(id=>document.getElementById(id)?.classList.remove('sel'));
-  document.getElementById('ss-spec-list').innerHTML='<div class="empty-msg">Спочатку оберіть заклад</div>';
+  document.getElementById('ss-spec-list').innerHTML=`<div class="empty-msg">${L('mStudySpecPick')}</div>`;
   openModal('m-start-study');
 }
 function ssPickType(type){
@@ -1522,7 +1523,7 @@ function ssPickType(type){
   document.getElementById('ss-btn-col').classList.toggle('sel',type==='college');
   const specs=type==='university'?UNI_SPECS:COL_SPECS;
   document.getElementById('ss-spec-label').textContent=type==='university'?L('setupSpecUni'):L('setupSpecCol');
-  document.getElementById('ss-spec-list').innerHTML=specs.map(s=>`<div class="spec-item" id="ss-si-${s.id}" onclick="ssPickSpec('${s.id}')"><span>${s.icon}</span><span>${s.name}</span></div>`).join('');
+  document.getElementById('ss-spec-list').innerHTML=specs.map(s=>`<div class="spec-item" id="ss-si-${s.id}" onclick="ssPickSpec('${s.id}')"><span>${s.icon}</span><span>${getSpecName(s)}</span></div>`).join('');
 }
 function ssPickSpec(id){
   _ssSpec=id;

@@ -30,6 +30,18 @@ const LANGS = {
     setupSpecCol:     'Спеціальність (технікум)',
     setupStartBtn:    'Почати гру →',
 
+    // ── Spec names ──
+    specUniEco:    'Економічний',
+    specUniLaw:    'Юридичний',
+    specUniHum:    'Гуманітарний',
+    specUniMed:    'Медицина',
+    specColMech:   'Механік',
+    specColCook:   'Кухар',
+    specColTailor: 'Швея',
+    specColElec:   'Електрик',
+    specColBuild:  'Будівельник',
+    specColAuto:   'Автомеханік',
+
     // ── Tabs ──
     tabOv:  'Звіт',
     tabInc: 'Доходи',
@@ -57,6 +69,8 @@ const LANGS = {
     ovStudyStartBtn: '📚 Почати навчання',
     ovStudyDropBtn:  (name, r) => `Закинути: ${name} (${r} р.)`,
     ovStudyGradBtn:  (name) => `🎓 Диплом: ${name}`,
+    ovStudyGradBtnShort: '🎓 Диплом',
+    ovStudyDropBtnShort: 'Закинути',
 
     // ── Income tab ──
     incTitle:      'Доходи',
@@ -445,6 +459,18 @@ const LANGS = {
     setupSpecCol:     'Специальность (техникум)',
     setupStartBtn:    'Начать игру →',
 
+    // ── Spec names ──
+    specUniEco:    'Экономический',
+    specUniLaw:    'Юридический',
+    specUniHum:    'Гуманитарный',
+    specUniMed:    'Медицина',
+    specColMech:   'Механик',
+    specColCook:   'Повар',
+    specColTailor: 'Швея',
+    specColElec:   'Электрик',
+    specColBuild:  'Строитель',
+    specColAuto:   'Автомеханик',
+
     // ── Tabs ──
     tabOv:  'Отчет',
     tabInc: 'Доходы',
@@ -472,6 +498,8 @@ const LANGS = {
     ovStudyStartBtn: '📚 Начать обучение',
     ovStudyDropBtn:  (name, r) => `Бросить: ${name} (${r} р.)`,
     ovStudyGradBtn:  (name) => `🎓 Диплом: ${name}`,
+    ovStudyGradBtnShort: '🎓 Диплом',
+    ovStudyDropBtnShort: 'Бросить',
 
     // ── Income tab ──
     incTitle:      'Доходы',
