@@ -560,10 +560,6 @@
           <div class="loan-max" data-i18n="expBankLimit">Ліміт: $3,000</div>
         </div>
         <div class="loan-stat-row">
-          <span class="loan-stat-lbl" data-i18n="expLoanAmt">Сума позик</span>
-          <span class="loan-stat-val mono" id="bank-amt-display">$0</span>
-        </div>
-        <div class="loan-stat-row">
           <span class="loan-stat-lbl" data-i18n="expLoanRem">Залишок боргу</span>
           <span class="loan-stat-val mono red" id="bank-rem-display">$0</span>
         </div>
@@ -583,10 +579,6 @@
         <div class="loan-hdr">
           <div><div class="loan-name" data-i18n="expMicroName">💸 Мікрокредит</div><div class="loan-rate" data-i18n="expMicroRate">30% річних · 1 рік = 1 раунд</div></div>
           <div class="loan-max" data-i18n="expMicroLimit">Ліміт: $30,000</div>
-        </div>
-        <div class="loan-stat-row">
-          <span class="loan-stat-lbl" data-i18n="expLoanAmt">Сума позик</span>
-          <span class="loan-stat-val mono" id="micro-amt-display">$0</span>
         </div>
         <div class="loan-stat-row">
           <span class="loan-stat-lbl" data-i18n="expLoanRem">Залишок боргу</span>
@@ -707,8 +699,8 @@
   </nav>
 
   <div class="sum-bar">
-    <div class="sum-item inc"><div class="sum-label" data-i18n="barInc">Дохід</div><div class="sum-val" id="bar-inc">$0</div></div>
-    <div class="sum-item exp"><div class="sum-label" data-i18n="barExp">Витрати</div><div class="sum-val" id="bar-exp">$0</div></div>
+    <div class="sum-item inc" onclick="setTab('inc')" style="cursor:pointer"><div class="sum-label" data-i18n="barInc">Дохід</div><div class="sum-val" id="bar-inc">$0</div></div>
+    <div class="sum-item exp" onclick="setTab('exp')" style="cursor:pointer"><div class="sum-label" data-i18n="barExp">Витрати</div><div class="sum-val" id="bar-exp">$0</div></div>
     <div class="sum-item bal"><div class="sum-label" data-i18n="barBal">Сальдо</div><div class="sum-val pos" id="bar-bal">$0</div></div>
   </div>
 </div>
@@ -1030,7 +1022,7 @@ const UNI_SPECS=[
   {id:'eco',nameKey:'specUniEco',name:'Економічний',  icon:'📊',field:'Економіка'},
   {id:'law',nameKey:'specUniLaw',name:'Юридичний',    icon:'⚖️',field:'Право'},
   {id:'hum',nameKey:'specUniHum',name:'Гуманітарний', icon:'📚',field:'Гуманітарні науки'},
-  {id:'med',nameKey:'specUniMed',name:'Медицина',     icon:'🏥',field:'Медицина'},
+  {id:'med',nameKey:'specUniMed',name:'Медичний',     icon:'🏥',field:'Медицина'},
 ];
 const COL_SPECS=[
   {id:'mech',  nameKey:'specColMech',  name:'Механік',    icon:'⚙️', field:'Механіка'},
@@ -1246,7 +1238,7 @@ function rInc(){
   const head=`<div class="inc-head"><div>${L('incHeadName')}</div><div class="col-r">${L('incHeadBase')}</div><div class="col-r">${L('incHeadMult')}</div><div class="col-r">${L('incHeadExtra')}</div><div class="col-r">${L('incHeadFinal')}</div><div></div></div>`;
   function buildRow(inc){
     const ap=addPay(inc),mx=mult(inc),f=fi(inc);
-    let sub=inc.type==='employee'||inc.type==='self'?L('incTypeEmployee'):inc.type==='stipend'?L('incTypeStipend'):L('incTypePassive');
+    let sub=inc.type==='employee'?L('incTypeEmployee'):inc.type==='self'?L('incTypeSelf'):inc.type==='stipend'?L('incTypeStipend'):L('incTypePassive');
     if(inc.type==='passive'&&inc.condition){sub+=L('incCondPrefix')+inc.condition.label;}
     else if(inc.type!=='passive'&&inc.field){const fieldStr=[inc.field,inc.subField].filter(Boolean).join(' / ');sub+=' · '+fieldStr;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
@@ -1274,10 +1266,8 @@ function rExp(){
   document.getElementById('kids-val').textContent=S.exp.kids;
   const bankAvail=3000-(S.loans.bankRem||0);
   const microAvail=30000-(S.loans.microRem||0);
-  document.getElementById('bank-amt-display').textContent='$'+(S.loans.bankAmt||0).toFixed(0);
   document.getElementById('bank-rem-display').textContent='$'+(S.loans.bankRem||0).toFixed(0);
   document.getElementById('bank-avail-display').textContent='$'+Math.max(0,bankAvail).toFixed(0);
-  document.getElementById('micro-amt-display').textContent='$'+(S.loans.microAmt||0).toFixed(0);
   document.getElementById('micro-rem-display').textContent='$'+(S.loans.microRem||0).toFixed(0);
   document.getElementById('micro-avail-display').textContent='$'+Math.max(0,microAvail).toFixed(0);
   document.getElementById('bank-borrow-btn').disabled=bankAvail<=0;
@@ -1312,6 +1302,7 @@ function toggleWife(v){S.exp.hasWife=v;if(!v)S.exp.wifeAmt=0;document.getElement
 function setWifeExp(v){S.exp.wifeAmt=parseFloat(v)||0;save();fbSync();updateExpTotals();renderBar();}
 function stepKids(d){S.exp.kids=Math.max(0,Math.min(3,S.exp.kids+d));save();fbSync();updateExpTotals();renderBar();}
 function updateExpTotals(){
+  document.getElementById('kids-val').textContent=S.exp.kids;
   const basic=(parseFloat(S.exp.housingBase)||0)+(parseFloat(S.exp.food)||0)+(parseFloat(S.exp.comm)||0)+(parseFloat(S.exp.transport)||0);
   document.getElementById('basic-total').textContent=fmt(basic);
   const wifeAmt=S.exp.hasWife?(parseFloat(S.exp.wifeAmt)||0):0;
@@ -2045,6 +2036,15 @@ function waitForFirebaseAndInit(attempts=0){
   if(window._fbInit||attempts>20){init();}
   else{setTimeout(()=>waitForFirebaseAndInit(attempts+1),100);}
 }
+document.addEventListener('focus',e=>{
+  const el=e.target;
+  if(el.classList.contains('exp-input-field')&&el.value==='0'){el.value='';}
+},true);
+document.addEventListener('blur',e=>{
+  const el=e.target;
+  if(el.classList.contains('exp-input-field')&&el.value===''){el.value='0';el.dispatchEvent(new Event('input'));}
+},true);
+
 waitForFirebaseAndInit();
 
 document.addEventListener('visibilitychange',()=>{

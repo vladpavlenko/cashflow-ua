@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CashFlow — Кубик</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Mono:wght@500;700&family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #08090f;
+  --surf:   #111420;
+  --elev:   #1a1e30;
+  --bord:   #252840;
+  --gold:   #f5a623;
+  --gdim:   rgba(245,166,35,0.12);
+  --green:  #22c55e;
+  --grdim:  rgba(34,197,94,0.10);
+  --red:    #ef4444;
+  --rddim:  rgba(239,68,68,0.10);
+  --blue:   #60a5fa;
+  --purp:   #c084fc;
+  --text:   #e8ecf5;
+  --sub:    #8892aa;
+  --mono:   'IBM Plex Mono', monospace;
+  --disp:   'Cormorant Garamond', serif;
+  --body:   'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: -webkit-fill-available; }
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(30,40,90,0.5) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, rgba(20,25,60,0.4) 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--body);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  padding: 16px 16px 40px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.hdr-title { font-family: var(--disp); font-size:28px; font-weight:700; color:var(--gold); }
+.hdr-right { text-align:right; }
+.circle-badge { background:var(--gdim); border:1px solid var(--gold); border-radius:20px; padding:3px 12px; font-size:11px; font-weight:700; color:var(--gold); }
+.round-sub { font-size:10px; color:var(--sub); margin-top:3px; }
+
+/* ── Progress ── */
+.prog-card {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.prog-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+.prog-lbl { font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--sub); }
+.prog-num { font-family:var(--mono); font-size:24px; font-weight:700; color:var(--gold); }
+.prog-num span { font-size:14px; color:var(--sub); }
+.bar-track { height:6px; background:rgba(255,255,255,0.05); border-radius:6px; overflow:hidden; margin-bottom:10px; }
+.bar-fill  { height:100%; background:linear-gradient(90deg,#f5a623,#f59e0b); border-radius:6px; transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+.dots-row { display:flex; flex-wrap:wrap; gap:3px; }
+.dot {
+  width:20px; height:20px; border-radius:5px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:9px; color:#3d4560;
+  transition: all 0.25s;
+}
+.dot.r { background:rgba(245,166,35,0.15); border-color:rgba(245,166,35,0.4); color:var(--gold); }
+
+/* ── Dice button ── */
+.dice-wrap { margin-bottom:14px; }
+.dice-btn {
+  width:100%; padding:18px; border:none; border-radius:16px;
+  background:var(--gold); color:#08090f;
+  font-family:var(--body); font-size:17px; font-weight:800;
+  cursor:pointer; letter-spacing:0.3px;
+  box-shadow: 0 4px 24px rgba(245,166,35,0.28);
+  transition: transform 0.1s, opacity 0.1s, box-shadow 0.2s;
+}
+.dice-btn:active { transform:scale(0.97); opacity:0.9; }
+.dice-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; box-shadow:none; }
+
+/* ── Result card ── */
+.card {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  animation: fadeUp 0.3s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.roll-row { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.dice-face {
+  width:52px; height:52px; flex-shrink:0;
+  background:#1a1e30; border:2px solid rgba(255,255,255,0.1);
+  border-radius:13px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:30px; font-weight:700; color:var(--gold);
+}
+.roll-meta { font-size:12px; color:var(--sub); line-height:1.6; }
+.roll-meta strong { color:var(--text); }
+
+/* ── Cell badge ── */
+.cell-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  border-radius:20px; padding:4px 13px;
+  font-size:12px; font-weight:700; margin-bottom:12px;
+  letter-spacing:0.3px;
+}
+.b-dela    { background:var(--gdim); color:var(--gold); border:1px solid rgba(245,166,35,0.3); }
+.b-trening { background:rgba(96,165,250,0.1); color:var(--blue); border:1px solid rgba(96,165,250,0.25); }
+.b-rashody { background:var(--rddim); color:var(--red); border:1px solid rgba(239,68,68,0.25); }
+.b-uvolen  { background:rgba(239,68,68,0.15); color:var(--red); border:1px solid rgba(239,68,68,0.4); }
+.b-lyubov  { background:rgba(168,85,247,0.12); color:var(--purp); border:1px solid rgba(168,85,247,0.3); }
+.b-rebenok { background:var(--grdim); color:var(--green); border:1px solid rgba(34,197,94,0.25); }
+.b-dohody  { background:var(--grdim); color:var(--green); border:1px solid rgba(34,197,94,0.4); }
+
+/* ── Card type buttons (for Дела/Тренинг) ── */
+.type-grid { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+.type-btn {
+  width:100%; padding:13px 16px; border-radius:12px;
+  background:var(--elev); border:1.5px solid var(--bord);
+  color:var(--text); font-family:var(--body); font-size:14px; font-weight:600;
+  cursor:pointer; text-align:left; display:flex; align-items:center; gap:10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.type-btn:active { transform:scale(0.98); }
+.type-btn.gold   { border-color:rgba(245,166,35,0.4); }
+.type-btn.blue   { border-color:rgba(96,165,250,0.3); }
+.type-btn.green  { border-color:rgba(34,197,94,0.3); }
+.type-btn.red    { border-color:rgba(239,68,68,0.3); }
+.type-btn .btn-icon { font-size:20px; flex-shrink:0; }
+.type-btn .btn-text { flex:1; }
+.type-btn .btn-sub { font-size:11px; color:var(--sub); font-weight:400; margin-top:1px; }
+
+/* ── Event card (drawn card) ── */
+.event-card {
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  animation: fadeUp 0.3s ease;
+}
+.event-card.income  { background:rgba(34,197,94,0.06);  border:1px solid rgba(34,197,94,0.2); }
+.event-card.expense { background:var(--rddim); border:1px solid rgba(239,68,68,0.2); }
+.event-card.passive { background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.25); }
+.event-card.deal    { background:rgba(96,165,250,0.06); border:1px solid rgba(96,165,250,0.2); }
+.event-card.training{ background:rgba(168,85,247,0.06); border:1px solid rgba(168,85,247,0.2); }
+.event-card.neutral { background:var(--elev); border:1px solid var(--bord); }
+
+.ev-title { font-size:16px; font-weight:700; margin-bottom:6px; }
+.ev-body  { font-size:13px; color:var(--sub); line-height:1.65; margin-bottom:12px; }
+.ev-body strong { color:var(--text); }
+.ev-body .req { color:rgba(239,68,68,0.8); font-size:12px; }
+
+.ev-actions { display:flex; gap:8px; }
+.btn-take   {
+  flex:1; padding:12px; border-radius:11px;
+  background:var(--green); color:#08090f;
+  border:none; font-family:var(--body); font-size:14px; font-weight:700;
+  cursor:pointer; transition:opacity 0.15s;
+}
+.btn-take:active { opacity:0.85; }
+.btn-skip   {
+  flex:1; padding:12px; border-radius:11px;
+  background:transparent; color:var(--sub);
+  border:1px solid var(--bord); font-family:var(--body); font-size:14px; font-weight:600;
+  cursor:pointer; transition:background 0.15s;
+}
+.btn-skip:active { background:var(--elev); }
+
+/* ── Round end ── */
+.round-end {
+  background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.25);
+  border-radius:16px; padding:22px; text-align:center; margin-bottom:12px;
+  animation: fadeUp 0.4s ease;
+}
+.re-icon  { font-size:40px; margin-bottom:8px; }
+.re-title { font-family:var(--disp); font-size:28px; font-weight:700; color:var(--green); margin-bottom:6px; }
+.re-sub   { font-size:13px; color:var(--sub); line-height:1.6; margin-bottom:16px; }
+.re-stats { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:16px; }
+.re-pill  {
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px; padding:4px 12px; font-size:12px; color:var(--sub);
+}
+.re-pill span { color:var(--text); font-weight:600; }
+.btn-next {
+  width:100%; padding:15px; border-radius:13px;
+  background:var(--green); color:#08090f;
+  border:none; font-family:var(--body); font-size:15px; font-weight:800;
+  cursor:pointer; transition:opacity 0.15s;
+  box-shadow:0 4px 20px rgba(34,197,94,0.2);
+}
+.btn-next:active { opacity:0.85; }
+
+/* ── History ── */
+.hist-title { font-size:10px; text-transform:uppercase; letter-spacing:2px; color:#3d4560; margin-bottom:8px; margin-top:4px; }
+.hist-item {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 12px; border-radius:8px;
+  background:rgba(255,255,255,0.02); border-left:2px solid var(--bord);
+  margin-bottom:4px; font-size:12px; color:var(--sub);
+}
+.hist-dice { font-family:var(--mono); font-weight:700; color:var(--gold); width:18px; flex-shrink:0; }
+.hist-cell { color:var(--text); }
+.hist-action { color:#3d4560; font-size:11px; }
+.hist-item.dela    { border-left-color:rgba(245,166,35,0.5); }
+.hist-item.trening { border-left-color:rgba(96,165,250,0.5); }
+.hist-item.rashody { border-left-color:rgba(239,68,68,0.4); }
+.hist-item.uvolen  { border-left-color:rgba(239,68,68,0.7); }
+.hist-item.lyubov  { border-left-color:rgba(168,85,247,0.5); }
+.hist-item.rebenok { border-left-color:rgba(34,197,94,0.5); }
+.hist-item.dohody  { border-left-color:rgba(34,197,94,0.7); }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-title">CashFlow</div>
+  <div class="hdr-right">
+    <div class="circle-badge" id="circle-badge">Коло 1</div>
+    <div class="round-sub" id="step-sub">Кроки: 0 / 24</div>
+  </div>
+</div>
+
+<!-- Прогрес -->
+<div class="prog-card">
+  <div class="prog-top">
+    <div class="prog-lbl">Хід по колу</div>
+    <div class="prog-num" id="prog-num">0 <span>/ 24</span></div>
+  </div>
+  <div class="bar-track"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+  <div class="dots-row" id="dots"></div>
+</div>
+
+<!-- Кубик -->
+<div class="dice-wrap">
+  <button class="dice-btn" id="dice-btn" onclick="roll()">🎲 Кинути кубик</button>
+</div>
+
+<!-- Основний контент -->
+<div id="main"></div>
+
+<!-- Лог -->
+<div id="hist-wrap" style="display:none">
+  <div class="hist-title">Ходи цього кола</div>
+  <div id="hist"></div>
+</div>
+
+<script>
+// ══════════════════════════════
+// ДАНІ КАРТОК
+// ══════════════════════════════
+const JOBS_EMP = [
+  {name:'Кур\'єр',           pay:120, req:[]},
+  {name:'Касир',             pay:150, req:[]},
+  {name:'Вантажник',         pay:130, req:[]},
+  {name:'Продавець',         pay:170, req:[]},
+  {name:'Оператор call-центру', pay:200, req:[]},
+  {name:'Адміністратор',     pay:230, req:['Гуманітарна освіта']},
+  {name:'Бухгалтер',         pay:360, req:['Економічна освіта']},
+  {name:'Юрист',             pay:420, req:['Юридична освіта']},
+  {name:'Менеджер проєктів', pay:380, req:['Економічна освіта']},
+  {name:'Java-розробник',    pay:480, req:['Курс Java']},
+  {name:'JS-розробник',      pay:440, req:['Курс JS']},
+  {name:'Python-розробник',  pay:460, req:['Курс Python']},
+  {name:'Психолог',          pay:290, req:['Психологічна освіта']},
+  {name:'Механік СТО',       pay:310, req:['Спеціальність: Автомеханік']},
+  {name:'Кухар ресторану',   pay:260, req:['Спеціальність: Кухар']},
+  {name:'Електрик',          pay:330, req:['Спеціальність: Електрик']},
+  {name:'Будівельник',       pay:280, req:['Спеціальність: Будівельник']},
+];
+
+const JOBS_SELF = [
+  {name:'Фріланс-дизайн',       pay:320, req:[]},
+  {name:'Репетитор',            pay:260, req:[]},
+  {name:'Масажист',             pay:370, req:['Курс масажу']},
+  {name:'Майстер манікюру',     pay:290, req:['Курс краси']},
+  {name:'Приватний перевізник', pay:420, req:['Права водія']},
+  {name:'Фріланс-програміст',   pay:650, req:['Курс Java або JS']},
+  {name:'Веб-розробник',        pay:530, req:['Курс JS або HTML/CSS']},
+  {name:'Приватний юрист',      pay:720, req:['Юридична освіта']},
+  {name:'Фотограф-фрілансер',   pay:340, req:[]},
+  {name:'Ремонт авто вдома',    pay:510, req:['Спеціальність: Автомеханік']},
+  {name:'Приватний електрик',   pay:480, req:['Спеціальність: Електрик']},
+];
+
+const RANDOM_INC = [
+  {name:'Підробіток кур\'єром',   amount:60,  req:[]},
+  {name:'Здав непотрібні речі',   amount:90,  req:[]},
+  {name:'Виграш у лотерею',       amount:130, req:[]},
+  {name:'Підробіток у кафе',      amount:70,  req:[]},
+  {name:'Виконав разове замовлення', amount:110, req:[]},
+  {name:'Продав на OLX',          amount:160, req:[]},
+  {name:'Повернули старий борг',  amount:100, req:[]},
+  {name:'Знайшов гаманець (чесно повернув і отримав нагороду)', amount:50, req:[]},
+  {name:'Підробіток водієм',      amount:190, req:['Права водія']},
+  {name:'Ремонт сусідам',         amount:210, req:['Спеціальність: Електрик']},
+  {name:'Разова фотосесія',       amount:150, req:[]},
+  {name:'Фріланс-задача',         amount:200, req:['Курс JS або Java']},
+];
+
+const STARTUPS = [
+  {name:'Вендинговий автомат',  invest:2000,  pct:0.08, req:[]},
+  {name:'Фотостудія',           invest:3000,  pct:0.06, req:[]},
+  {name:'Майстерня з ремонту',  invest:2500,  pct:0.07, req:['Спеціальність: Механік або Електрик']},
+  {name:'Онлайн-магазин',       invest:1800,  pct:0.09, req:[]},
+  {name:'Кав\'ярня',            invest:8000,  pct:0.06, req:[]},
+  {name:'IT-стартап',           invest:5000,  pct:0.10, req:['Курс Java або JS']},
+  {name:'Салон краси',          invest:6000,  pct:0.07, req:['Курс краси або масажу']},
+  {name:'Автомийка',            invest:9000,  pct:0.05, req:[]},
+  {name:'Хостел',               invest:14000, pct:0.06, req:[]},
+  {name:'СТО',                  invest:11000, pct:0.07, req:['Спеціальність: Автомеханік']},
+  {name:'Ресторан',             invest:18000, pct:0.05, req:['Спеціальність: Кухар']},
+  {name:'Програмний продукт',   invest:5500,  pct:0.12, req:['Курс Java або JS']},
+  {name:'Блог / YouTube',       invest:800,   pct:0.15, req:[]},
+  {name:'Великий бізнес',       invest:32000, pct:0.08, req:[]},
+];
+
+const DEALS = [
+  {name:'Перепродаж смартфону',     invest:500,  mult:2.2, term:3, req:[]},
+  {name:'Перепродаж авто',          invest:2500, mult:1.8, term:4, req:['Спеціальність: Автомеханік']},
+  {name:'Товар з Китаю',            invest:1500, mult:2.5, term:4, req:[]},
+  {name:'Криптовалюта',             invest:1000, mult:2.0, term:3, req:[]},
+  {name:'Перепродаж нерухомості',   invest:5000, mult:1.6, term:5, req:[]},
+  {name:'Оптова партія одягу',      invest:2000, mult:2.3, term:4, req:[]},
+  {name:'Ремонт і перепродаж техніки', invest:700, mult:2.8, term:3, req:['Спеціальність: Електрик або Механік']},
+  {name:'Бізнес з Китаєм',          invest:3000, mult:2.0, term:4, req:['Курс: Бізнес з Китаєм']},
+];
+
+const COURSES = [
+  {name:'Курс Java (базовий)',    cost:400, field:'Java',        effect:'Дає доступ до роботи Java-розробника. +$600 якщо є інша мова програмування'},
+  {name:'Курс JavaScript',        cost:350, field:'JS',          effect:'Дає доступ до роботи JS-розробника і фрілансу. +$500 при наявності іншої мови'},
+  {name:'Курс Python',            cost:350, field:'Python',      effect:'Дає доступ до роботи Python-розробника. +$550 при наявності іншої мови'},
+  {name:'Курс HTML/CSS/Web',      cost:280, field:'Веб',         effect:'+$300 до доходу веб-фрілансера'},
+  {name:'Курс масажу',            cost:300, field:'Краса',       effect:'+$300 до доходу у сфері Краса'},
+  {name:'Курс манікюру',          cost:250, field:'Краса',       effect:'+$200 до доходу у сфері Краса'},
+  {name:'Курс англійської (базовий)',  cost:200, field:'Англійська', effect:'Відкриває вакансії з вимогою Англійська'},
+  {name:'Курс англійської (просунутий)', cost:350, field:'Англійська', effect:'+$400 до доходу при роботі з іноземними клієнтами'},
+  {name:'Курс вождіння (кат. B)', cost:500, field:'Вождіння',   effect:'Дає права водія. Відкриває вакансії перевізника'},
+  {name:'Курс бухобліку',         cost:300, field:'Бухгалтерія', effect:'+$200 до доходу бухгалтера'},
+  {name:'Курс бізнесу з Китаєм',  cost:400, field:'Китай',      effect:'Відкриває угоду "Бізнес з Китаєм"'},
+  {name:'SMM і соцмережі',        cost:250, field:'Маркетинг',  effect:'+$200 до доходу маркетолога або фрілансера'},
+];
+
+const TRAININGS = [
+  {name:'Тайм-менеджмент',       cost:150, effect:'Марний. Ти навчився керувати часом. Ніякого бонусу.', mult:0,    applyTo:null},
+  {name:'Лідерство',             cost:200, effect:'Марний. Ти став лідером. Ніякого бонусу.',           mult:0,    applyTo:null},
+  {name:'Мислення багатого',     cost:300, effect:'Марний. Ти думаєш як багатий. Але бонусів немає.',   mult:0,    applyTo:null},
+  {name:'Управління людьми',     cost:250, effect:'+15% до доходу від роботи на дядю',                  mult:0.15, applyTo:'employee'},
+  {name:'Продуктивність',        cost:350, effect:'+20% до всіх активних доходів',                     mult:0.20, applyTo:'both'},
+  {name:'Переговори і продажі',  cost:300, effect:'+10% до доходу від роботи на себе',                  mult:0.10, applyTo:'self'},
+  {name:'Управління проєктами',  cost:280, effect:'+12% до доходу від роботи на дядю',                 mult:0.12, applyTo:'employee'},
+  {name:'Фінансова грамотність', cost:200, effect:'+5% до всіх доходів',                               mult:0.05, applyTo:'both'},
+];
+
+const EXPENSES = [20,30,50,50,70,80,80,100,100,120,150,150,200,200,300,300,500];
+
+// ══════════════════════════════
+// СТАН
+// ══════════════════════════════
+const BOARD = [
+  'Дела','Тренинг','Дела','Расходы','Дела',
+  'Тренинг','Дела','Уволен','Дела','Тренинг',
+  'Расходы','Дела','Любовь','Тренинг','Дела',
+  'Расходы','Дела','Тренинг','Ребенок','Дела',
+  'Тренинг','Расходы','Дела','Доходы',
+];
+const CELL_CLS = {
+  Дела:'dela', Тренинг:'trening', Расходы:'rashody',
+  Уволен:'uvolen', Любовь:'lyubov', Ребенок:'rebenok', Доходы:'dohody',
+};
+const CELL_ICON = {
+  Дела:'💼', Тренинг:'📚', Расходы:'💸',
+  Уволен:'🔥', Любовь:'💍', Ребенок:'👶', Доходы:'🏁',
+};
+
+let S = { circle:1, pos:0, steps:0, rolls:[], done:false };
+
+function rnd(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+// ══════════════════════════════
+// ПРОГРЕС
+// ══════════════════════════════
+function renderProg() {
+  const pct = Math.min(100, Math.round(S.steps/24*100));
+  document.getElementById('bar').style.width = pct+'%';
+  document.getElementById('prog-num').innerHTML = `${S.steps} <span>/ 24</span>`;
+  document.getElementById('step-sub').textContent = `Кроки: ${S.steps} / 24`;
+
+  const dotsEl = document.getElementById('dots');
+  dotsEl.innerHTML = '';
+  S.rolls.forEach(r => {
+    const d = document.createElement('div');
+    d.className = 'dot r';
+    d.textContent = r.dice;
+    dotsEl.appendChild(d);
+  });
+  const rem = Math.min(12, Math.max(0, 24 - S.rolls.length));
+  for (let i=0; i<rem; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+  }
+}
+
+// ══════════════════════════════
+// КИДОК
+// ══════════════════════════════
+function roll() {
+  if (S.done) return;
+  const btn = document.getElementById('dice-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳';
+
+  setTimeout(() => {
+    const dice = Math.floor(Math.random()*6)+1;
+    S.steps += dice;
+    S.pos = (S.pos + dice) % 24;
+    const cell = BOARD[S.pos];
+    S.rolls.push({ dice, cell });
+
+    renderProg();
+    showCell(dice, cell);
+
+    if (S.steps >= 24 || cell === 'Доходы') {
+      S.done = true;
+    }
+    // кнопку розблокуємо після вибору гравця
+  }, 250);
+}
+
+function enableDice() {
+  if (S.done) {
+    showRoundEnd();
+    return;
+  }
+  const btn = document.getElementById('dice-btn');
+  btn.disabled = false;
+  btn.textContent = '🎲 Кинути кубик';
+}
+
+// ══════════════════════════════
+// ПОКАЗАТИ КЛІТИНУ
+// ══════════════════════════════
+function showCell(dice, cell) {
+  const main = document.getElementById('main');
+  const cls  = CELL_CLS[cell];
+  const icon = CELL_ICON[cell];
+
+  let html = `
+    <div class="card">
+      <div class="roll-row">
+        <div class="dice-face">${dice}</div>
+        <div class="roll-meta">
+          Кубик: <strong>${dice}</strong><br>
+          Всього кроків: <strong>${S.steps}</strong> / 24<br>
+          Позиція: ${S.pos+1} із 24
+        </div>
+      </div>
+      <div class="cell-badge b-${cls}">${icon} ${cell.toUpperCase()}</div>
+    `;
+
+  if (cell === 'Дела') {
+    html += `<div style="font-size:13px;color:var(--sub);margin-bottom:10px">Яку картку берете?</div>
+      <div class="type-grid">
+        <button class="type-btn gold" onclick="drawDela('emp')">
+          <span class="btn-icon">💼</span>
+          <div class="btn-text"><div>Робота на дядю</div><div class="btn-sub">Активний дохід $100–$480/міс</div></div>
+        </button>
+        <button class="type-btn blue" onclick="drawDela('self')">
+          <span class="btn-icon">🧑‍💻</span>
+          <div class="btn-text"><div>Робота на себе</div><div class="btn-sub">Активний дохід $260–$720/міс · є вимоги</div></div>
+        </button>
+        <button class="type-btn green" onclick="drawDela('random')">
+          <span class="btn-icon">💰</span>
+          <div class="btn-text"><div>Випадковий заробіток</div><div class="btn-sub">Разовий дохід $50–$210 одразу</div></div>
+        </button>
+        <button class="type-btn blue" onclick="drawDela('deal')">
+          <span class="btn-icon">🤝</span>
+          <div class="btn-text"><div>Купи-Продай</div><div class="btn-sub">Угода: вклад $500–$5000, прибуток ×1.6–2.8</div></div>
+        </button>
+        <button class="type-btn gold" onclick="drawDela('startup')">
+          <span class="btn-icon">🚀</span>
+          <div class="btn-text"><div>Стартапи і кейси</div><div class="btn-sub">Пасивний дохід · вхід $800–$32000</div></div>
+        </button>
+      </div>`;
+
+  } else if (cell === 'Тренинг') {
+    html += `<div style="font-size:13px;color:var(--sub);margin-bottom:10px">Яку картку берете?</div>
+      <div class="type-grid">
+        <button class="type-btn blue" onclick="drawTraining('course')">
+          <span class="btn-icon">📖</span>
+          <div class="btn-text"><div>Курс</div><div class="btn-sub">Корисний · дає навичку або бонус до доходу</div></div>
+        </button>
+        <button class="type-btn" onclick="drawTraining('training')">
+          <span class="btn-icon">🧠</span>
+          <div class="btn-text"><div>Тренінг</div><div class="btn-sub">Може бути корисним або інфоциганством</div></div>
+        </button>
+      </div>`;
+
+  } else if (cell === 'Расходы') {
+    html += '</div>';
+    main.innerHTML = html;
+    drawExpense();
+    addHist(dice, cell, '');
+    return;
+
+  } else if (cell === 'Уволен') {
+    html += '</div>';
+    main.innerHTML = html;
+    drawFired();
+    addHist(dice, cell, '');
+    return;
+
+  } else if (cell === 'Любовь') {
+    html += '</div>';
+    main.innerHTML = html;
+    drawLove();
+    addHist(dice, cell, '');
+    return;
+
+  } else if (cell === 'Ребенок') {
+    html += '</div>';
+    main.innerHTML = html;
+    drawChild();
+    addHist(dice, cell, '');
+    return;
+
+  } else if (cell === 'Доходы') {
+    html += `<div class="event-card income">
+      <div class="ev-title">🏁 День зарплати — Коло завершено!</div>
+      <div class="ev-body">Отримай всі свої щомісячні доходи і сплати витрати та відсотки по кредитах.<br>Після розрахунку натисни "Нове коло".</div>
+      <div class="ev-actions"><button class="btn-take" onclick="endAction('Коло завершено')">Завершити коло →</button></div>
+    </div>`;
+    addHist(dice, cell, '');
+  }
+
+  html += '</div>';
+  main.innerHTML = html;
+}
+
+// ══════════════════════════════
+// ДІЛА
+// ══════════════════════════════
+function drawDela(type) {
+  const main = document.getElementById('main');
+  const last = S.rolls[S.rolls.length-1];
+
+  if (type === 'emp') {
+    const job = rnd(JOBS_EMP);
+    const reqStr = job.req.length ? `<div class="req">⚠ Вимоги: ${job.req.join(', ')}</div>` : '<div style="color:var(--green);font-size:12px">✓ Без вимог</div>';
+    showEvent('income', '💼 Вакансія: Робота на дядю',
+      `<strong>${job.name}</strong><br>Дохід: <strong style="color:var(--green)">$${job.pay}/міс</strong><br>${reqStr}`,
+      'Взяти роботу', () => endAction(`Робота: ${job.name} $${job.pay}/міс`),
+      'Пропустити', () => endAction('Пропустив вакансію')
+    );
+
+  } else if (type === 'self') {
+    const job = rnd(JOBS_SELF);
+    const reqStr = job.req.length ? `<div class="req">⚠ Вимоги: ${job.req.join(', ')}</div>` : '<div style="color:var(--green);font-size:12px">✓ Без вимог</div>';
+    showEvent('income', '🧑‍💻 Вакансія: Робота на себе',
+      `<strong>${job.name}</strong><br>Дохід: <strong style="color:var(--green)">$${job.pay}/міс</strong><br>${reqStr}`,
+      'Взяти роботу', () => endAction(`Робота на себе: ${job.name} $${job.pay}/міс`),
+      'Пропустити', () => endAction('Пропустив вакансію')
+    );
+
+  } else if (type === 'random') {
+    const inc = rnd(RANDOM_INC);
+    const reqStr = inc.req.length ? `<div class="req">⚠ Вимоги: ${inc.req.join(', ')}</div>` : '';
+    showEvent('income', '💰 Випадковий заробіток',
+      `<strong>${inc.name}</strong><br>Разовий дохід: <strong style="color:var(--green)">+$${inc.amount} одразу</strong>${reqStr ? '<br>'+reqStr : ''}`,
+      `Забрати +$${inc.amount}`, () => endAction(`Заробіток: ${inc.name} +$${inc.amount}`),
+      'Пропустити', () => endAction('Пропустив заробіток')
+    );
+
+  } else if (type === 'deal') {
+    const d = rnd(DEALS);
+    const profit = Math.round(d.invest * d.mult);
+    const reqStr = d.req.length ? `<div class="req">⚠ Вимоги: ${d.req.join(', ')}</div>` : '<div style="color:var(--green);font-size:12px">✓ Без вимог</div>';
+    showEvent('deal', '🤝 Купи-Продай',
+      `<strong>${d.name}</strong><br>
+       Вкладення: <strong style="color:var(--red)">−$${d.invest}</strong><br>
+       Прибуток: <strong style="color:var(--green)">+$${profit}</strong> через <strong>${d.term} міс.</strong><br>
+       ${reqStr}`,
+      `Укласти угоду (−$${d.invest})`, () => endAction(`Угода: ${d.name} −$${d.invest} → +$${profit} за ${d.term} міс.`),
+      'Пропустити', () => endAction('Пропустив угоду')
+    );
+
+  } else if (type === 'startup') {
+    const s = rnd(STARTUPS);
+    const monthly = Math.round(s.invest * s.pct);
+    const reqStr = s.req.length ? `<div class="req">⚠ Вимоги: ${s.req.join(', ')}</div>` : '<div style="color:var(--green);font-size:12px">✓ Без вимог</div>';
+    showEvent('passive', '🚀 Стартап / Кейс',
+      `<strong>${s.name}</strong><br>
+       Вхід: <strong style="color:var(--red)">−$${s.invest.toLocaleString()}</strong><br>
+       Пасивний дохід: <strong style="color:var(--gold)">+$${monthly}/міс</strong> (${Math.round(s.pct*100)}%/міс)<br>
+       ${reqStr}`,
+      `Відкрити (−$${s.invest.toLocaleString()})`, () => endAction(`Стартап: ${s.name} $${monthly}/міс пасивний`),
+      'Пропустити', () => endAction('Пропустив стартап')
+    );
+  }
+  addHist(last.dice, last.cell, type);
+}
+
+// ══════════════════════════════
+// ТРЕНІНГ
+// ══════════════════════════════
+function drawTraining(type) {
+  const last = S.rolls[S.rolls.length-1];
+  if (type === 'course') {
+    const c = rnd(COURSES);
+    showEvent('training', '📖 Курс',
+      `<strong>${c.name}</strong><br>
+       Вартість: <strong style="color:var(--red)">$${c.cost}</strong><br>
+       Ефект: <strong>${c.effect}</strong>`,
+      `Пройти курс (−$${c.cost})`, () => endAction(`Курс: ${c.name} −$${c.cost}`),
+      'Пропустити', () => endAction('Пропустив курс')
+    );
+  } else {
+    const t = rnd(TRAININGS);
+    const isBad = t.mult === 0;
+    showEvent(isBad ? 'neutral' : 'training', '🧠 Тренінг',
+      `<strong>${t.name}</strong><br>
+       Вартість: <strong style="color:var(--red)">$${t.cost}</strong><br>
+       ${isBad
+         ? `<span style="color:var(--sub)">⚠ Ефект невідомий до проходження</span>`
+         : `Ефект після проходження: <strong>${t.effect}</strong>`}`,
+      `Пройти тренінг (−$${t.cost})`, () => endAction(`Тренінг: ${t.name} −$${t.cost} → ${t.effect}`),
+      'Пропустити', () => endAction('Пропустив тренінг')
+    );
+  }
+  addHist(last.dice, last.cell, type);
+}
+
+// ══════════════════════════════
+// РОЗХОДИ, УВОЛЕН, ЛЮБОВ, ДИТИНА
+// ══════════════════════════════
+function drawExpense() {
+  const amount = rnd(EXPENSES);
+  showEvent('expense', '💸 Опять расходы',
+    `Одноразова витрата: <strong style="color:var(--red)">−$${amount}</strong><br>
+     <span style="font-size:12px;color:var(--sub)">Ніяких вимог — просто витрата</span>`,
+    `Сплатити −$${amount}`, () => endAction(`Витрата: −$${amount}`),
+    null, null
+  );
+}
+
+function drawFired() {
+  showEvent('expense', '🔥 Ти звільнений!',
+    `Якщо у тебе є активний дохід <strong>«Робота на дядю»</strong> — прибери останній отриманий.<br>
+     <span style="font-size:12px;color:var(--sub)">Якщо роботи на дядю немає — нічого не відбувається</span>`,
+    'Зрозумів ✓', () => endAction('Уволен: прибрав останню роботу на дядю'),
+    null, null
+  );
+}
+
+function drawLove() {
+  showEvent('training', '💍 Любов',
+    `Якщо ти ще не одружений — <strong>з\'явився партнер!</strong><br>
+     Домовтесь з ведучим про розмір витрат на партнера.<br>
+     Житло, їжа, транспорт, зв\'язок — ділиться навпіл або за домовленістю.<br>
+     <span style="font-size:12px;color:var(--sub)">Якщо вже одружений — нічого</span>`,
+    'Зрозумів ✓', () => endAction('Любов: партнер з\'явився'),
+    null, null
+  );
+}
+
+function drawChild() {
+  showEvent('income', '👶 Дитина',
+    `Якщо ти одружений і маєш менше 3 дітей — <strong>народилась дитина!</strong><br>
+     Витрати +$50/міс (або за домовленістю з ведучим).<br>
+     <span style="font-size:12px;color:var(--sub)">Якщо не одружений або 3 дітей — нічого</span>`,
+    'Зрозумів ✓', () => endAction('Дитина: +$50/міс витрат'),
+    null, null
+  );
+}
+
+// ══════════════════════════════
+// ШАБЛОН КАРТКИ ПОДІЇ
+// ══════════════════════════════
+function showEvent(type, title, body, takeLbl, takeFn, skipLbl, skipFn) {
+  const main = document.getElementById('main');
+  const id   = 'ev-' + Date.now();
+  const skipBtn = (skipLbl && skipFn)
+    ? `<button class="btn-skip" id="skip-${id}" onclick="evSkip_${id}()">
+         ${skipLbl}
+       </button>`
+    : '';
+
+  // Зберігаємо існуючий roll-card і додаємо картку
+  const existing = main.querySelector('.card');
+  const evEl = document.createElement('div');
+  evEl.className = `event-card ${type}`;
+  evEl.id = id;
+  evEl.innerHTML = `
+    <div class="ev-title">${title}</div>
+    <div class="ev-body">${body}</div>
+    <div class="ev-actions">
+      <button class="btn-take" id="take-${id}">${takeLbl}</button>
+      ${skipBtn}
+    </div>`;
+
+  main.appendChild(evEl);
+  evEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  document.getElementById(`take-${id}`).onclick = () => { takeFn(); };
+  if (skipFn) {
+    window[`evSkip_${id}`] = () => { skipFn(); };
+  }
+}
+
+// ══════════════════════════════
+// ПІСЛЯ ВИБОРУ ГРАВЦЯ
+// ══════════════════════════════
+function endAction(desc) {
+  const last = S.rolls[S.rolls.length - 1];
+  // Оновити лог
+  updateLastHist(desc);
+  // Сховати кнопки вибору, показати опис дії
+  const main = document.getElementById('main');
+  const evCards = main.querySelectorAll('.event-card');
+  evCards.forEach(el => {
+    const actions = el.querySelector('.ev-actions');
+    if (actions) {
+      actions.innerHTML = `<div style="font-size:12px;color:var(--green)">✓ ${desc}</div>`;
+    }
+  });
+  enableDice();
+}
+
+// ══════════════════════════════
+// КІНЕЦЬ КОЛА
+// ══════════════════════════════
+function showRoundEnd() {
+  const main = document.getElementById('main');
+  const counts = {};
+  S.rolls.forEach(r => { counts[r.cell] = (counts[r.cell]||0)+1; });
+  const statsHtml = Object.entries(counts)
+    .map(([c,v]) => `<div class="re-pill">${CELL_ICON[c]} ${c}: <span>${v}</span></div>`)
+    .join('');
+
+  const endEl = document.createElement('div');
+  endEl.className = 'round-end';
+  endEl.innerHTML = `
+    <div class="re-icon">🏁</div>
+    <div class="re-title">Коло ${S.circle} завершено</div>
+    <div class="re-sub">
+      Кидків: <strong>${S.rolls.length}</strong> · Кроків: <strong>${S.steps}</strong>
+    </div>
+    <div class="re-stats">${statsHtml}</div>
+    <div style="font-size:13px;color:#4ade80;margin-bottom:16px;line-height:1.7;text-align:left">
+      💰 Отримай всі щомісячні доходи<br>
+      💸 Сплати витрати і відсотки по кредитах<br>
+      📱 Нажми "Завершити місяць" в застосунку
+    </div>
+    <button class="btn-next" onclick="newCircle()">▶ Почати коло ${S.circle+1}</button>`;
+  main.appendChild(endEl);
+  endEl.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  document.getElementById('dice-btn').disabled  = true;
+  document.getElementById('dice-btn').textContent = '✓ Коло завершено';
+}
+
+function newCircle() {
+  S = { circle: S.circle+1, pos:0, steps:0, rolls:[], done:false };
+  document.getElementById('circle-badge').textContent = `Коло ${S.circle}`;
+  document.getElementById('main').innerHTML = '';
+  document.getElementById('hist').innerHTML = '';
+  document.getElementById('hist-wrap').style.display = 'none';
+  renderProg();
+  const btn = document.getElementById('dice-btn');
+  btn.disabled = false;
+  btn.textContent = '🎲 Кинути кубик';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════
+// ЛІЧИЛЬНИК ХОДІВ (ліг)
+// ══════════════════════════════
+let _lastHistEl = null;
+function addHist(dice, cell, action) {
+  const wrap = document.getElementById('hist-wrap');
+  const list = document.getElementById('hist');
+  wrap.style.display = 'block';
+  const el = document.createElement('div');
+  el.className = `hist-item ${CELL_CLS[cell]}`;
+  el.innerHTML = `
+    <span class="hist-dice">${dice}</span>
+    <span>${CELL_ICON[cell]}</span>
+    <span class="hist-cell">${cell}</span>
+    <span class="hist-action" id="ha-${S.rolls.length}"></span>`;
+  if (list.firstChild) list.insertBefore(el, list.firstChild);
+  else list.appendChild(el);
+  _lastHistEl = list.firstChild;
+}
+
+function updateLastHist(desc) {
+  if (!_lastHistEl) return;
+  const span = _lastHistEl.querySelector('.hist-action');
+  if (span) span.textContent = '· ' + desc.substring(0,30) + (desc.length>30?'…':'');
+}
+
+// init
+renderProg();
+</script>
+</body>
+</html>
