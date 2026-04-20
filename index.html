@@ -423,7 +423,12 @@
 <div id="main-screen" class="hidden">
   <div class="app-header">
     <div class="hdr-top">
-      <button class="hdr-reset-btn" onclick="resetGame()" data-i18n-title="resetTitle">🔄</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="hdr-reset-btn" onclick="resetGame()" data-i18n-title="resetTitle">🔄</button>
+        <button onclick="renderTxLog();openModal('m-txlog')"
+                style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 10px;color:var(--sub);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;"
+                data-i18n="txlogBtn">Лог</button>
+      </div>
       <div style="display:flex;align-items:center;gap:7px">
         <div class="player-name" id="hdr-name">—</div>
         <div class="live-dot" id="live-dot"></div>
@@ -988,6 +993,17 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="m-txlog" onclick="overlayClose(event,'m-txlog')">
+  <div class="modal" style="max-height:80vh">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0" data-i18n="txlogTitle">Лог транзакцій</div>
+      <button onclick="closeModal('m-txlog')" style="background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;padding:4px">✕</button>
+    </div>
+    <div id="txlog-list" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:60vh"></div>
+    <div id="txlog-empty" class="hidden" style="text-align:center;padding:32px;color:var(--sub);font-size:13px" data-i18n="txlogEmpty">Транзакцій ще немає</div>
+  </div>
+</div>
+
 <!-- ══ LOGIC ══ -->
 <script>
 const UNI_SPECS=[
@@ -1013,6 +1029,7 @@ let S={
   exp:{housingLabel:'Гуртожиток',housingBase:0,housingType:'self',food:0,comm:0,transport:0,hasWife:false,wifeAmt:0,kids:0,kidCost:0},
   loans:{bankAmt:0,bankRem:0,microAmt:0,microRem:0},
   courses:[],trainings:[],deals:[],tab:'ov',
+  txLog:[],
 };
 
 function activeStudies(){return(S.educations||[]).filter(e=>!e.completed);}
@@ -1200,6 +1217,34 @@ function renderBar(){
   document.getElementById('bar-exp').textContent=fmt(e);
   const el=document.getElementById('bar-bal'); el.textContent=fmtS(b); el.className='sum-val '+(b>=0?'pos':'neg');
 }
+function renderTxLog(){
+  const list=document.getElementById('txlog-list');
+  const empty=document.getElementById('txlog-empty');
+  if(!list)return;
+  const log=S.txLog||[];
+  if(log.length===0){list.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  const TYPE_META={
+    income:    {icon:'💰',color:'var(--green)'},
+    expense:   {icon:'💸',color:'var(--red)'},
+    loan_take: {icon:'🏦',color:'var(--gold)'},
+    loan_repay:{icon:'✓', color:'var(--green)'},
+    deal:      {icon:'🤝',color:'var(--blue)'},
+    passive:   {icon:'🚀',color:'var(--gold)'},
+  };
+  list.innerHTML=log.map(tx=>{
+    const meta=TYPE_META[tx.type]||{icon:'•',color:'var(--sub)'};
+    const isPos=tx.amount>=0;
+    const amtStr=(isPos?'+':'−')+'$'+Math.abs(tx.amount).toLocaleString();
+    const creditStr=tx.credit>0?`<span style="font-size:10px;color:var(--gold);margin-left:6px">${L('txlogCredit',tx.credit.toLocaleString())}</span>`:'';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.02);border-left:2px solid ${meta.color}">
+      <span style="font-size:15px;flex-shrink:0">${meta.icon}</span>
+      <span style="flex:1;font-size:13px;color:var(--sub)">${tx.label}</span>
+      ${creditStr}
+      <span style="font-family:var(--mono);font-size:14px;font-weight:600;color:${isPos?'var(--green)':'var(--red)'};flex-shrink:0">${amtStr}</span>
+    </div>`;
+  }).join('');
+}
 function rOv(){
   document.getElementById('ov-cash').textContent=fmt(S.cash);
   renderStudyCompact();
@@ -1319,6 +1364,7 @@ function confirmBorrow(){
   if(isBank){S.loans.bankAmt=(S.loans.bankAmt||0)+amount;S.loans.bankRem=(S.loans.bankRem||0)+amount;}
   else{S.loans.microAmt=(S.loans.microAmt||0)+amount;S.loans.microRem=(S.loans.microRem||0)+amount;}
   S.cash+=amount;
+  logTx('loan_take',isBank?L('txlogLabelLoanBank'):L('txlogLabelLoanMicro'),+amount,0);
   closeModal('m-borrow');save();fbSync();renderAll();
 }
 let _repaySource=null;
@@ -1361,6 +1407,7 @@ function confirmRepay(){
   S.cash-=actualRepay;
   if(isBank){S.loans.bankRem=Math.max(0,debt-actualRepay);if(S.loans.bankRem===0)S.loans.bankAmt=0;}
   else{S.loans.microRem=Math.max(0,debt-actualRepay);if(S.loans.microRem===0)S.loans.microAmt=0;}
+  logTx('loan_repay',isBank?L('txlogLabelRepayBank'):L('txlogLabelRepayMicro'),-actualRepay,0);
   closeModal('m-repay');save();fbSync();renderAll();
 }
 function openAddIncomeModal(){
@@ -1534,6 +1581,7 @@ function saveIncome(){
   if(type==='passive'){
     if(S.cash>=purchaseCost){
       S.cash-=purchaseCost;
+      logTx('passive',L('txlogLabelPassive',n),-purchaseCost,0);
       S.incomes.push(inc);closeModal('m-inc');save();fbSync();renderAll();
     } else {
       _pendingPassiveIncome=inc;
@@ -1707,6 +1755,8 @@ function afterDebtResolved(){
     finishRound();
   } else if(_debtContext==='quick_expense'){
     S.cash+=_balanceSnapshot; // _balanceSnapshot=-amount, відраховує витрату
+    logTx('expense',L('txlogLabelQuickExpense'),-(_pendingExpenseAmount||0),S.loans.bankRem+S.loans.microRem);
+    _pendingExpenseAmount=0;
     _pendingShortfall=0;
     _debtContext='round_end';
     closeModal('m-debt');
@@ -1716,6 +1766,7 @@ function afterDebtResolved(){
       S.deals=S.deals||[];
       S.deals.push(_pendingDeal);
       S.cash-=_pendingDeal.invested;
+      logTx('deal',L('txlogLabelDeal',_pendingDeal.name),-_pendingDeal.invested,S.loans.bankRem+S.loans.microRem);
       _pendingDeal=null;
     }
     _pendingShortfall=0;
@@ -1725,6 +1776,7 @@ function afterDebtResolved(){
   } else if(_debtContext==='passive_purchase'){
     if(_pendingPassiveIncome){
       S.cash-=_pendingPassiveIncome.purchaseCost;
+      logTx('passive',L('txlogLabelPassive',_pendingPassiveIncome.name),-_pendingPassiveIncome.purchaseCost,S.loans.bankRem+S.loans.microRem);
       S.incomes.push(_pendingPassiveIncome);
       _pendingPassiveIncome=null;
     }
@@ -1779,6 +1831,7 @@ function confirmDeal(){
     S.cash-=invested;
     S.deals=S.deals||[];
     S.deals.push(deal);
+    logTx('deal',L('txlogLabelDeal',deal.name),-invested,0);
     closeModal('m-deal');
     save();fbSync();renderAll();
   } else {
@@ -1886,6 +1939,7 @@ async function confirmQuickIncome(){
   }
   S.cash+=amount;
   S.pendingIncome=null;
+  logTx('income',L('txlogLabelQuickIncome'),+amount,0);
   closeModal('m-quick-income');
   save();fbSync();renderAll();
 }
@@ -1903,9 +1957,11 @@ function confirmQuickExpense(){
   if(amount<=0){errEl.textContent=L('qaErrNoAmt');errEl.classList.remove('hidden');return;}
   if(S.cash>=amount){
     S.cash-=amount;
+    logTx('expense',L('txlogLabelQuickExpense'),-amount,0);
     closeModal('m-quick-expense');
     save();fbSync();renderAll();
   } else {
+    _pendingExpenseAmount=amount;
     _balanceSnapshot=-amount;
     _pendingShortfall=amount-S.cash;
     _debtContext='quick_expense';
@@ -1945,6 +2001,12 @@ function fbSync(){
 
 /* ── Local storage ── */
 function save(){try{localStorage.setItem('cf_state',JSON.stringify(S));}catch(e){}}
+function logTx(type,label,amount,credit){
+  S.txLog=S.txLog||[];
+  S.txLog.unshift({type,label,amount:Math.round(amount),credit:Math.round(credit||0)});
+  if(S.txLog.length>30)S.txLog.pop();
+}
+let _pendingExpenseAmount=0;
 function load(){
   try{
     const d=localStorage.getItem('cf_state');

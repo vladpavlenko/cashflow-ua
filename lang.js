@@ -246,6 +246,20 @@ const LANGS = {
     mRepayErrInsuf:      (cash) => `❌ Недостатньо готівки. Доступно: $${cash}`,
     mRepayErrZero:       '❌ Введіть суму для погашення',
 
+    // ── TX Log ──
+    txlogBtn:              'Лог',
+    txlogTitle:            'Лог транзакцій',
+    txlogEmpty:            'Транзакцій ще немає',
+    txlogCredit:           (v) => `кредит $${v}`,
+    txlogLabelQuickIncome: 'Швидкий дохід',
+    txlogLabelQuickExpense:'Швидка витрата',
+    txlogLabelLoanBank:    'Позика: Банк',
+    txlogLabelLoanMicro:   'Позика: Мікрокредит',
+    txlogLabelRepayBank:   'Виплата: Банк',
+    txlogLabelRepayMicro:  'Виплата: Мікрокредит',
+    txlogLabelDeal:        (name) => `Угода: ${name}`,
+    txlogLabelPassive:     (name) => `Стартап: ${name}`,
+
     // ── Bankrupt modal ──
     mBankruptTitle:   '💀 Банкрутство',
     mBankruptNewGame: '🔄 Почати нову гру',
@@ -333,6 +347,10 @@ const LANGS = {
     gmBalance:      'Сальдо',
     gmExpand:       '▼ Всі деталі',
     gmCollapse:     '▲ Сховати деталі',
+    gmLogBtn:       '📋 Лог',
+    gmLogTitle:     '📋 Лог транзакцій',
+    gmLogEmpty:     'Транзакцій ще немає або дані не синхронізовані',
+    gmLogCredit:    (v) => `кредит $${v}`,
     gmTypeEmployee: 'Найманий',
     gmTypeSelf:     'На себе',
     gmTypeStipend:  'Стипендія',
@@ -680,6 +698,20 @@ const LANGS = {
     mRepayErrInsuf:      (cash) => `❌ Недостаточно наличных. Доступно: $${cash}`,
     mRepayErrZero:       '❌ Введите сумму для погашения',
 
+    // ── TX Log ──
+    txlogBtn:              'Лог',
+    txlogTitle:            'Лог транзакций',
+    txlogEmpty:            'Транзакций ещё нет',
+    txlogCredit:           (v) => `кредит $${v}`,
+    txlogLabelQuickIncome: 'Быстрый доход',
+    txlogLabelQuickExpense:'Быстрая трата',
+    txlogLabelLoanBank:    'Займ: Банк',
+    txlogLabelLoanMicro:   'Займ: Микрокредит',
+    txlogLabelRepayBank:   'Погашение: Банк',
+    txlogLabelRepayMicro:  'Погашение: Микрокредит',
+    txlogLabelDeal:        (name) => `Сделка: ${name}`,
+    txlogLabelPassive:     (name) => `Стартап: ${name}`,
+
     // ── Bankrupt modal ──
     mBankruptTitle:   '💀 Банкротство',
     mBankruptNewGame: '🔄 Начать новую игру',
@@ -767,6 +799,10 @@ const LANGS = {
     gmBalance:      'Сальдо',
     gmExpand:       '▼ Все детали',
     gmCollapse:     '▲ Скрыть детали',
+    gmLogBtn:       '📋 Лог',
+    gmLogTitle:     '📋 Лог транзакций',
+    gmLogEmpty:     'Транзакций ещё нет или данные не синхронизированы',
+    gmLogCredit:    (v) => `кредит $${v}`,
     gmTypeEmployee: 'Наёмный',
     gmTypeSelf:     'На себя',
     gmTypeStipend:  'Стипендия',

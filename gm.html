@@ -368,6 +368,12 @@
     .lang-btn.active { border-color:var(--gold); color:var(--gold); }
     .lang-btn:hover:not(.active) { border-color:var(--text); color:var(--text); }
 
+    /* Modal overlay */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:100;display:flex;align-items:flex-end; }
+    .modal { background:var(--surface);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));width:100%;overflow-y:auto; }
+    .modal-title { font-size:22px;font-weight:700;color:var(--text); }
+    .hidden { display:none !important; }
+
     /* Alert banner */
     .alert-banner {
       background: rgba(239,68,68,0.1);
@@ -869,9 +875,13 @@ function playerCard(key, p) {
       <div class="pc-fin-item exp"><div class="pc-fin-lbl">${L('gmExpenses')}</div><div class="pc-fin-val">$${(p.totalExpense||0).toFixed(0)}</div></div>
       <div class="pc-fin-item bal"><div class="pc-fin-lbl">${L('gmBalance')}</div><div class="pc-fin-val ${balCls}">${balSign}$${Math.abs(bal).toFixed(0)}</div></div>
     </div>
-    <div class="pc-expand">
-      <button class="btn-expand" onclick="toggleExpand('${key}')">
+    <div class="pc-expand" style="display:flex;gap:8px;align-items:center;padding:10px 16px">
+      <button class="btn-expand" style="flex:1" onclick="toggleExpand('${key}')">
         ${exp ? L('gmCollapse') : L('gmExpand')}
+      </button>
+      <button onclick="showPlayerLog('${key}')"
+              style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:5px 12px;color:var(--sub);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap">
+        ${L('gmLogBtn')}
       </button>
     </div>
     ${detail}
@@ -947,6 +957,49 @@ async function gmDeleteRoom() {
   }
 }
 
+/* ── TX Log ── */
+function showPlayerLog(playerKey) {
+  const p=_players[playerKey];
+  if(!p)return;
+  document.getElementById('gm-log-player-name').textContent=p.playerName||playerKey;
+  const log=p.txLog||[];
+  const list=document.getElementById('gm-txlog-list');
+  const empty=document.getElementById('gm-txlog-empty');
+  if(log.length===0){
+    list.innerHTML='';
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    const TYPE_META={
+      income:    {icon:'💰',color:'var(--green)'},
+      expense:   {icon:'💸',color:'var(--red)'},
+      loan_take: {icon:'🏦',color:'var(--gold)'},
+      loan_repay:{icon:'✓', color:'var(--green)'},
+      deal:      {icon:'🤝',color:'var(--blue)'},
+      passive:   {icon:'🚀',color:'var(--gold)'},
+    };
+    list.innerHTML=log.map(tx=>{
+      const meta=TYPE_META[tx.type]||{icon:'•',color:'var(--sub)'};
+      const isPos=tx.amount>=0;
+      const amtStr=(isPos?'+':'−')+'$'+Math.abs(tx.amount).toLocaleString();
+      const creditStr=tx.credit>0
+        ?`<span style="font-size:10px;color:var(--gold);background:rgba(245,166,35,0.1);border-radius:4px;padding:1px 6px;margin-right:4px">${L('gmLogCredit',tx.credit.toLocaleString())}</span>`
+        :'';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;background:rgba(255,255,255,0.02);border-left:2px solid ${meta.color}">
+        <span style="font-size:14px;flex-shrink:0">${meta.icon}</span>
+        <span style="flex:1;font-size:12px;color:var(--sub)">${tx.label}</span>
+        ${creditStr}
+        <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:${isPos?'var(--green)':'var(--red)'};flex-shrink:0">${amtStr}</span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('gm-txlog-modal').classList.remove('hidden');
+}
+
+function closeGmLog() {
+  document.getElementById('gm-txlog-modal').classList.add('hidden');
+}
+
 /* ── Init ── */
 function init(){
   applyLang();
@@ -956,5 +1009,24 @@ function init(){
 init();
 window.addEventListener('cf-lang-changed',()=>{ if(typeof renderDashboard==='function') renderDashboard(); });
 </script>
+
+<div class="modal-overlay hidden" id="gm-txlog-modal"
+     onclick="if(event.target===this)closeGmLog()">
+  <div class="modal" style="max-height:80vh">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div class="modal-title" style="margin-bottom:2px" data-i18n="gmLogTitle">📋 Лог транзакцій</div>
+        <div style="font-size:12px;color:var(--sub)" id="gm-log-player-name">—</div>
+      </div>
+      <button onclick="closeGmLog()"
+              style="background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;padding:4px">✕</button>
+    </div>
+    <div id="gm-txlog-list"
+         style="display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:60vh"></div>
+    <div id="gm-txlog-empty" class="hidden"
+         style="text-align:center;padding:32px;color:var(--sub);font-size:13px"
+         data-i18n="gmLogEmpty">Транзакцій ще немає або дані не синхронізовані</div>
+  </div>
+</div>
 </body>
 </html>
