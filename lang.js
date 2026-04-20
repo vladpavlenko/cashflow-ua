@@ -87,6 +87,7 @@ const LANGS = {
     incTypeStipend: 'Стипендія',
     incTypePassive: 'Пасивний',
     incCondPrefix:  ' · Умова: ',
+    incPassiveCostInfo: (cost) => `придбано за $${cost}`,
 
     // ── Expenses tab ──
     expTitle:       'Витрати',
@@ -155,6 +156,10 @@ const LANGS = {
     mIncFieldPh:         'напр. Фінанси, IT, Медицина…',
     mIncSubFieldLabel:   'Під-сфера (необов\'язково)',
     mIncSubFieldPh:      'напр. Java, Python…',
+    mIncPassiveCostLabel:   'Вартість придбання ($)',
+    mIncPassiveCostEnough:  (cash)  => `✓ Вистачає готівки ($${cash} доступно)`,
+    mIncPassiveCostShort:   (short) => `⚠ Не вистачає $${short} — буде запропоновано кредит`,
+    alertEnterCost:         'Введіть вартість придбання (більше $0)',
     mIncCondLabel:    "Умова для запуску (необов'язково)",
     mIncCondNone:     '— без умови —',
     mIncCondEdu:      'Освіта',
@@ -516,6 +521,7 @@ const LANGS = {
     incTypeStipend: 'Стипендия',
     incTypePassive: 'Пассивный',
     incCondPrefix:  ' · Условие: ',
+    incPassiveCostInfo: (cost) => `куплено за $${cost}`,
 
     // ── Expenses tab ──
     expTitle:       'Расходы',
@@ -584,6 +590,10 @@ const LANGS = {
     mIncFieldPh:         'напр. Финансы, IT, Медицина…',
     mIncSubFieldLabel:   'Подсфера (необязательно)',
     mIncSubFieldPh:      'напр. Java, Python…',
+    mIncPassiveCostLabel:   'Стоимость покупки ($)',
+    mIncPassiveCostEnough:  (cash)  => `✓ Достаточно средств ($${cash} доступно)`,
+    mIncPassiveCostShort:   (short) => `⚠ Не хватает $${short} — будет предложен кредит`,
+    alertEnterCost:         'Введите стоимость покупки (больше $0)',
     mIncCondLabel:    'Условие для запуска (необязательно)',
     mIncCondNone:     '— без условия —',
     mIncCondEdu:      'Образование',

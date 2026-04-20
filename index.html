@@ -721,40 +721,12 @@
     <div class="f-field"><label class="f-label" data-i18n="mIncBaseLabel">Базова оплата ($)</label><input type="number" class="f-input" id="mi-base" placeholder="0" min="0"></div>
     <div class="f-field" id="mi-field-block"><label class="f-label" data-i18n="mIncFieldLabel">Сфера (для курсів)</label><input type="text" class="f-input" id="mi-field" data-i18n-ph="mIncFieldPh" placeholder="напр. Фінанси, IT, Медицина…" autocomplete="off"></div>
     <div class="f-field hidden" id="mi-subfield-block"><label class="f-label" data-i18n="mIncSubFieldLabel">Під-сфера (необов'язково)</label><input type="text" class="f-input" id="mi-subfield" data-i18n-ph="mIncSubFieldPh" placeholder="напр. Java, Python…" autocomplete="off"></div>
-    <div class="f-field hidden" id="mi-condition-block">
-      <label class="f-label" data-i18n="mIncCondLabel">Умова для запуску (необов'язково)</label>
-      <select class="f-select" id="mi-condition-type" onchange="onConditionTypeChange(this.value)">
-        <option value="" data-i18n-opt="mIncCondNone">— без умови —</option>
-        <option value="edu" data-i18n-opt="mIncCondEdu">Освіта</option>
-        <option value="exp" data-i18n-opt="mIncCondExp">Досвід роботи у сфері</option>
-      </select>
-      <div class="hidden" id="mi-condition-edu-block" style="margin-top:10px">
-        <select class="f-select" id="mi-condition-edu">
-          <option value="university_eco">Університет — Економічний</option>
-          <option value="university_law">Університет — Юридичний</option>
-          <option value="university_hum">Університет — Гуманітарний</option>
-          <option value="university_psy">Університет — Психологічний</option>
-          <option value="college_mech">Технікум — Механік</option>
-          <option value="college_cook">Технікум — Кухар</option>
-          <option value="college_tailor">Технікум — Швея</option>
-          <option value="college_elec">Технікум — Електрик</option>
-          <option value="college_build">Технікум — Будівельник</option>
-          <option value="college_auto">Технікум — Автомеханік</option>
-        </select>
-      </div>
-      <div class="hidden" id="mi-condition-exp-block" style="margin-top:10px">
-        <select class="f-select" id="mi-condition-exp">
-          <option value="beauty">Сфера краси</option>
-          <option value="programming">Програмування</option>
-          <option value="auto">Автомеханік</option>
-          <option value="cooking">Кулінарія</option>
-          <option value="construction">Будівництво</option>
-          <option value="finance">Фінанси</option>
-          <option value="law">Право</option>
-          <option value="medicine">Медицина</option>
-          <option value="trade">Торгівля</option>
-        </select>
-      </div>
+    <div class="f-field hidden" id="mi-passive-cost-block">
+      <label class="f-label" data-i18n="mIncPassiveCostLabel">Вартість придбання ($)</label>
+      <input type="number" class="f-input" id="mi-passive-cost"
+             placeholder="0" min="1"
+             oninput="updatePassiveCostPreview(this.value)">
+      <div style="margin-top:8px;font-size:12px;color:var(--sub)" id="mi-passive-cost-hint"></div>
     </div>
     <button class="btn-primary" onclick="saveIncome()" data-i18n="save">Зберегти</button>
     <button class="btn-cancel"  onclick="closeModal('m-inc')" data-i18n="cancel">Скасувати</button>
@@ -1239,7 +1211,7 @@ function rInc(){
   function buildRow(inc){
     const ap=addPay(inc),mx=mult(inc),f=fi(inc);
     let sub=inc.type==='employee'?L('incTypeEmployee'):inc.type==='self'?L('incTypeSelf'):inc.type==='stipend'?L('incTypeStipend'):L('incTypePassive');
-    if(inc.type==='passive'&&inc.condition){sub+=L('incCondPrefix')+inc.condition.label;}
+    if(inc.type==='passive'&&inc.purchaseCost){sub+=' · '+L('incPassiveCostInfo',inc.purchaseCost);}
     else if(inc.type!=='passive'&&inc.field){const fieldStr=[inc.field,inc.subField].filter(Boolean).join(' / ');sub+=' · '+fieldStr;}
     const delBtn=inc._protected?'':`<button class="btn-del" onclick="delIncome('${inc.id}')">✕</button>`;
     const multEl=mx>1?`<div class="col-r"><span class="mult-link" onclick="showMultBreakdown('${inc.id}')">×${mx.toFixed(2)}</span></div>`:`<div class="col-r sub">×${mx.toFixed(2)}</div>`;
@@ -1379,11 +1351,11 @@ function onRepayInput(val){
 }
 function confirmRepay(){
   const isBank=_repaySource==='bank';
-  const debt=isBank?(S.loans.bankRem||0):(S.loans.microRem||0);
-  const cash=S.cash||0;
-  const entered=parseFloat(document.getElementById('repay-amount').value)||0;
+  const entered=Math.round(parseFloat(document.getElementById('repay-amount').value||0)*100)/100;
+  const cash   =Math.round((S.cash||0)*100)/100;
+  const debt   =Math.round((isBank?(S.loans.bankRem||0):(S.loans.microRem||0))*100)/100;
   const errEl=document.getElementById('repay-error');
-  if(entered>cash){errEl.textContent=L('mRepayErrInsuf',cash.toFixed(0));errEl.style.display='block';return;}
+  if(Math.round(entered*100)>Math.round(cash*100)){errEl.textContent=L('mRepayErrInsuf',cash.toFixed(0));errEl.style.display='block';return;}
   if(entered<=0){errEl.textContent=L('mRepayErrZero');errEl.style.display='block';return;}
   const actualRepay=Math.min(entered,debt);
   S.cash-=actualRepay;
@@ -1397,11 +1369,11 @@ function openAddIncomeModal(){
   document.getElementById('mi-base').value='';
   document.getElementById('mi-field').value='';
   document.getElementById('mi-subfield').value='';
-  document.getElementById('mi-condition-type').value='';
-  document.getElementById('mi-condition-edu-block').classList.add('hidden');
-  document.getElementById('mi-condition-exp-block').classList.add('hidden');
+  const costEl=document.getElementById('mi-passive-cost');
+  if(costEl)costEl.value='';
+  document.getElementById('mi-passive-cost-block')?.classList.add('hidden');
   document.getElementById('mi-field-block').classList.remove('hidden');
-  document.getElementById('mi-condition-block').classList.add('hidden');
+  updatePassiveCostPreview('');
   const sel=document.getElementById('mi-type');
   Array.from(sel.options).forEach(opt=>{if(opt.value==='employee'||opt.value==='self')opt.disabled=limitReached;});
   if(limitReached){sel.value='passive';}else{sel.value='employee';}
@@ -1417,14 +1389,23 @@ function onIncomeTypeChange(type){
   const isPassive=type==='passive';
   document.getElementById('mi-field-block').classList.toggle('hidden',isPassive);
   document.getElementById('mi-subfield-block').classList.toggle('hidden',isPassive);
-  document.getElementById('mi-condition-block').classList.toggle('hidden',!isPassive);
-  document.getElementById('mi-condition-type').value='';
-  document.getElementById('mi-condition-edu-block').classList.add('hidden');
-  document.getElementById('mi-condition-exp-block').classList.add('hidden');
+  document.getElementById('mi-passive-cost-block').classList.toggle('hidden',!isPassive);
+  const costEl=document.getElementById('mi-passive-cost');
+  if(costEl)costEl.value='';
+  updatePassiveCostPreview('');
 }
-function onConditionTypeChange(val){
-  document.getElementById('mi-condition-edu-block').classList.toggle('hidden',val!=='edu');
-  document.getElementById('mi-condition-exp-block').classList.toggle('hidden',val!=='exp');
+function updatePassiveCostPreview(val){
+  const hint=document.getElementById('mi-passive-cost-hint');
+  if(!hint)return;
+  const amount=parseFloat(val)||0;
+  if(amount<=0){hint.textContent='';return;}
+  const cash=S.cash||0;
+  if(cash>=amount){
+    hint.innerHTML=`<span style="color:var(--green)">${L('mIncPassiveCostEnough',cash.toFixed(0))}</span>`;
+  } else {
+    const short=amount-cash;
+    hint.innerHTML=`<span style="color:var(--gold)">${L('mIncPassiveCostShort',short.toFixed(0))}</span>`;
+  }
 }
 function dropOutStudy(eduId){
   const edu=(S.educations||[]).find(e=>e.id===eduId);
@@ -1544,14 +1525,26 @@ function saveIncome(){
   if(!n){alert(L('alertEnterName2'));return;}
   const type=document.getElementById('mi-type').value;
   if((type==='employee'||type==='self')&&activeIncomeCount()>=2){alert(L('alertIncomeLimit'));return;}
-  const inc={id:'i'+Date.now(),type,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:document.getElementById('mi-field').value.trim(),subField:document.getElementById('mi-subfield').value.trim(),condition:null};
+  let purchaseCost=0;
   if(type==='passive'){
-    inc.field='';
-    const condType=document.getElementById('mi-condition-type').value;
-    if(condType==='edu'){inc.condition={type:'edu',value:document.getElementById('mi-condition-edu').value,label:document.getElementById('mi-condition-edu').selectedOptions[0]?.text??''};}
-    else if(condType==='exp'){inc.condition={type:'exp',value:document.getElementById('mi-condition-exp').value,label:document.getElementById('mi-condition-exp').selectedOptions[0]?.text??''};}
+    purchaseCost=parseFloat(document.getElementById('mi-passive-cost').value)||0;
+    if(purchaseCost<=0){alert(L('alertEnterCost'));return;}
   }
-  S.incomes.push(inc);closeModal('m-inc');save();fbSync();renderAll();
+  const inc={id:'i'+Date.now(),type,name:n,basePay:parseFloat(document.getElementById('mi-base').value)||0,field:type!=='passive'?document.getElementById('mi-field').value.trim():'',subField:document.getElementById('mi-subfield')?.value.trim()||'',condition:null,purchaseCost};
+  if(type==='passive'){
+    if(S.cash>=purchaseCost){
+      S.cash-=purchaseCost;
+      S.incomes.push(inc);closeModal('m-inc');save();fbSync();renderAll();
+    } else {
+      _pendingPassiveIncome=inc;
+      _balanceSnapshot=-purchaseCost;
+      _pendingShortfall=purchaseCost-S.cash;
+      _debtContext='passive_purchase';
+      closeModal('m-inc');openDebtModal();
+    }
+  } else {
+    S.incomes.push(inc);closeModal('m-inc');save();fbSync();renderAll();
+  }
 }
 function delIncome(id){
   const income=S.incomes.find(i=>i.id===id);
@@ -1729,11 +1722,22 @@ function afterDebtResolved(){
     _debtContext='round_end';
     closeModal('m-debt');
     save();fbSync();renderAll();
+  } else if(_debtContext==='passive_purchase'){
+    if(_pendingPassiveIncome){
+      S.cash-=_pendingPassiveIncome.purchaseCost;
+      S.incomes.push(_pendingPassiveIncome);
+      _pendingPassiveIncome=null;
+    }
+    _pendingShortfall=0;
+    _debtContext='round_end';
+    closeModal('m-debt');
+    save();fbSync();renderAll();
   }
 }
 
 let _dealTerm=1;
 let _pendingDeal=null;
+let _pendingPassiveIncome=null;
 
 function openDealModal(){
   _dealTerm=1;
