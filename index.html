@@ -1040,6 +1040,7 @@ function activeIncomeCount(){return S.incomes.filter(i=>i.type==='employee'||i.t
 let _setupEdu=null, _setupSpec=null, _fbActive=false;
 let _pendingShortfall=0, _balanceSnapshot=0;
 let _debtContext='round_end';
+let _prevLoanTotal=0;
 
 function onRoomInput(v) {
   const el=document.getElementById('sync-badge');
@@ -1231,16 +1232,18 @@ function renderTxLog(){
     loan_repay:{icon:'✓', color:'var(--green)'},
     deal:      {icon:'🤝',color:'var(--blue)'},
     passive:   {icon:'🚀',color:'var(--gold)'},
+    round_end: {icon:'🏁',color:'var(--sub)'},
   };
   list.innerHTML=log.map(tx=>{
     const meta=TYPE_META[tx.type]||{icon:'•',color:'var(--sub)'};
     const isPos=tx.amount>=0;
     const amtStr=(isPos?'+':'−')+'$'+Math.abs(tx.amount).toLocaleString();
+    const cashStr=typeof tx.cash==='number'?`<span style="font-size:10px;color:var(--sub);background:rgba(255,255,255,0.05);border-radius:4px;padding:1px 6px;margin-right:4px">${L('txLogCash')} $${tx.cash.toLocaleString()}</span>`:'';
     const creditStr=tx.credit>0?`<span style="font-size:10px;color:var(--gold);margin-left:6px">${L('txlogCredit',tx.credit.toLocaleString())}</span>`:'';
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.02);border-left:2px solid ${meta.color}">
       <span style="font-size:15px;flex-shrink:0">${meta.icon}</span>
       <span style="flex:1;font-size:13px;color:var(--sub)">${tx.label}</span>
-      ${creditStr}
+      ${cashStr}${creditStr}
       <span style="font-family:var(--mono);font-size:14px;font-weight:600;color:${isPos?'var(--green)':'var(--red)'};flex-shrink:0">${amtStr}</span>
     </div>`;
   }).join('');
@@ -1619,6 +1622,7 @@ function saveTraining(){const n=document.getElementById('mt-name').value.trim();
 function delTraining(id){S.trainings=S.trainings.filter(t=>t.id!==id);save();fbSync();renderAll();}
 
 function openEndRound(){
+  _prevLoanTotal=(S.loans.bankRem||0)+(S.loans.microRem||0);
   const i=totalInc(),e=totalExp(),b=bal(),nC=S.cash+b;
   document.getElementById('er-title').textContent=L('mEndTitle',S.round);
   document.getElementById('er-cur').textContent=fmt(S.cash);
@@ -1639,7 +1643,8 @@ function openEndRound(){
   openModal('m-end');
 }
 function finishRound(){
-  S.cash+=_balanceSnapshot;S.round++;
+  const _snap=_balanceSnapshot;
+  S.cash+=_snap;S.round++;
   _pendingShortfall=0;_balanceSnapshot=0;
   (S.educations||[]).forEach(edu=>{if(!edu.completed&&edu.roundsLeft>0)edu.roundsLeft--;});
   (S.deals||[]).forEach(deal=>{
@@ -1648,6 +1653,15 @@ function finishRound(){
       if(deal.termLeft===0)deal.status='ready';
     }
   });
+  const _monthIncome=Math.max(0,_snap);
+  const _monthExpense=Math.max(0,-_snap);
+  const _roundNum=S.round-1;
+  if(_snap>=0){
+    logTx('round_end',L('txLogRoundIncome',_roundNum),+_monthIncome,0);
+  } else {
+    const _creditTaken=(S.loans.bankRem+S.loans.microRem)-(_prevLoanTotal||0);
+    logTx('round_end',L('txLogRoundExpense',_roundNum),-_monthExpense,Math.max(0,_creditTaken));
+  }
   closeModal('m-debt');closeModal('m-end');
   save();fbSync();renderAll();
   const passive=totalPassiveInc();
@@ -1995,6 +2009,7 @@ function fbSync(){
       totalIncome:totalInc(), totalExpense:totalExp(), balance:bal(),
       incomes:S.incomes, courses:S.courses, trainings:S.trainings,
       exp:S.exp, loans:S.loans,
+      txLog:S.txLog||[], deals:S.deals||[],
     });
   },800);
 }
@@ -2003,7 +2018,7 @@ function fbSync(){
 function save(){try{localStorage.setItem('cf_state',JSON.stringify(S));}catch(e){}}
 function logTx(type,label,amount,credit){
   S.txLog=S.txLog||[];
-  S.txLog.unshift({type,label,amount:Math.round(amount),credit:Math.round(credit||0)});
+  S.txLog.unshift({type,label,amount:Math.round(amount),credit:Math.round(credit||0),cash:Math.round(S.cash||0)});
   if(S.txLog.length>30)S.txLog.pop();
 }
 let _pendingExpenseAmount=0;

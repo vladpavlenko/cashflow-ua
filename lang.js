@@ -259,6 +259,9 @@ const LANGS = {
     txlogLabelRepayMicro:  'Виплата: Мікрокредит',
     txlogLabelDeal:        (name) => `Угода: ${name}`,
     txlogLabelPassive:     (name) => `Стартап: ${name}`,
+    txLogCash:             'готівка:',
+    txLogRoundIncome:      (n) => `Місяць ${n}: дохід`,
+    txLogRoundExpense:     (n) => `Місяць ${n}: витрата`,
 
     // ── Bankrupt modal ──
     mBankruptTitle:   '💀 Банкрутство',
@@ -711,6 +714,9 @@ const LANGS = {
     txlogLabelRepayMicro:  'Погашение: Микрокредит',
     txlogLabelDeal:        (name) => `Сделка: ${name}`,
     txlogLabelPassive:     (name) => `Стартап: ${name}`,
+    txLogCash:             'наличные:',
+    txLogRoundIncome:      (n) => `Месяц ${n}: доход`,
+    txLogRoundExpense:     (n) => `Месяц ${n}: расход`,
 
     // ── Bankrupt modal ──
     mBankruptTitle:   '💀 Банкротство',

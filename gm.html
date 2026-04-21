@@ -977,18 +977,20 @@ function showPlayerLog(playerKey) {
       loan_repay:{icon:'✓', color:'var(--green)'},
       deal:      {icon:'🤝',color:'var(--blue)'},
       passive:   {icon:'🚀',color:'var(--gold)'},
+      round_end: {icon:'🏁',color:'var(--sub)'},
     };
     list.innerHTML=log.map(tx=>{
       const meta=TYPE_META[tx.type]||{icon:'•',color:'var(--sub)'};
       const isPos=tx.amount>=0;
       const amtStr=(isPos?'+':'−')+'$'+Math.abs(tx.amount).toLocaleString();
+      const cashStr=typeof tx.cash==='number'?`<span style="font-size:10px;color:var(--sub);background:rgba(255,255,255,0.05);border-radius:4px;padding:1px 6px;margin-right:4px">${L('txLogCash')} $${tx.cash.toLocaleString()}</span>`:'';
       const creditStr=tx.credit>0
         ?`<span style="font-size:10px;color:var(--gold);background:rgba(245,166,35,0.1);border-radius:4px;padding:1px 6px;margin-right:4px">${L('gmLogCredit',tx.credit.toLocaleString())}</span>`
         :'';
       return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;background:rgba(255,255,255,0.02);border-left:2px solid ${meta.color}">
         <span style="font-size:14px;flex-shrink:0">${meta.icon}</span>
         <span style="flex:1;font-size:12px;color:var(--sub)">${tx.label}</span>
-        ${creditStr}
+        ${cashStr}${creditStr}
         <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:${isPos?'var(--green)':'var(--red)'};flex-shrink:0">${amtStr}</span>
       </div>`;
     }).join('');
