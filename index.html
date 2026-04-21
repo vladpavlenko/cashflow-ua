@@ -1104,6 +1104,7 @@ function startGame(){
       window._fbListenApproval(room,pKey,(data)=>{
         if(data.status==='approved'&&S.pendingIncome){
           S.cash+=S.pendingIncome.amount;
+          logTx('income',L('txlogLabelQuickIncome'),+S.pendingIncome.amount,0);
           S.pendingIncome=null;
           window._fbClearApproval?.(room,pKey);
           closeModal('m-quick-income');
@@ -2091,6 +2092,7 @@ function init(){
         window._fbListenApproval(S.roomCode,pKey,(data)=>{
           if(data.status==='approved'&&S.pendingIncome){
             S.cash+=S.pendingIncome.amount;
+            logTx('income',L('txlogLabelQuickIncome'),+S.pendingIncome.amount,0);
             S.pendingIncome=null;
             window._fbClearApproval?.(S.roomCode,pKey);
             closeModal('m-quick-income');
