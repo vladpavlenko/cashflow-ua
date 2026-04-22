@@ -1864,6 +1864,7 @@ function collectDeal(dealId){
   if(!deal||deal.status!=='ready')return;
   S.cash+=deal.profit||0;
   deal.status='completed';
+  logTx('deal',L('txlogLabelDealCollect',deal.name),+(deal.profit||0),0);
   save();fbSync();renderAll();
   if((deal.profit||0)>0)alert(L('alertDealCollect',deal.name,deal.profit));
 }
