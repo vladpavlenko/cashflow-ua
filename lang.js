@@ -56,6 +56,9 @@ const LANGS = {
 
     // ── Overview ──
     ovCashLabel:   'Поточна готівка',
+    ovLoanLabel:   'Сума займу',
+    ovLoanBank:    'у банку',
+    ovLoanMicro:   'у мікрокредиті',
     ovIncLabel:    'Дохід / раунд',
     ovExpLabel:    'Витрати / раунд',
     ovBalLabel:    'Сальдо',
@@ -511,7 +514,10 @@ const LANGS = {
     hdrPassiveText:(amt) => `Пассив ${amt}`,
 
     // ── Overview ──
-    ovCashLabel:   'Текущие наличные',
+    ovCashLabel:   'Наличные',
+    ovLoanLabel:   'Сумма займа',
+    ovLoanBank:    'в банке',
+    ovLoanMicro:   'в микрокредите',
     ovIncLabel:    'Доход / раунд',
     ovExpLabel:    'Расходы / раунд',
     ovBalLabel:    'Сальдо',

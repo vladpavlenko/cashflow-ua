@@ -470,9 +470,22 @@
            style="display:flex;align-items:center;justify-content:space-between;
                   gap:12px;padding:20px 18px">
         <div style="flex:1;min-width:0">
-          <div class="ov-cash-label">ПОТОЧНА ГОТІВКА</div>
+          <div class="ov-cash-label" data-i18n="ovCashLabel">Поточна готівка</div>
           <div class="ov-cash-val" id="ov-cash" style="font-size:44px">$500</div>
           <div class="ov-cash-curr">USD</div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--glass-border)">
+            <div class="ov-cash-label" data-i18n="ovLoanLabel">Сума займу</div>
+            <div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">
+              <div style="font-size:10px;color:var(--sub);letter-spacing:0.3px">
+                <span data-i18n="ovLoanBank">у банку</span>:
+                <span id="ov-loan-bank" style="font-family:var(--mono);font-weight:600;color:var(--red)">$0</span>
+              </div>
+              <div style="font-size:10px;color:var(--sub);letter-spacing:0.3px">
+                <span data-i18n="ovLoanMicro">у мікрокредиті</span>:
+                <span id="ov-loan-micro" style="font-family:var(--mono);font-weight:600;color:var(--red)">$0</span>
+              </div>
+            </div>
+          </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
           <button class="qa-btn qa-income" onclick="openQuickIncome()">
@@ -1258,6 +1271,8 @@ function renderTxLog(){
 }
 function rOv(){
   document.getElementById('ov-cash').textContent=fmt(S.cash);
+  document.getElementById('ov-loan-bank').textContent=fmt(S.loans.bankRem||0);
+  document.getElementById('ov-loan-micro').textContent=fmt(S.loans.microRem||0);
   renderStudyCompact();
 }
 function rInc(){
@@ -1721,6 +1736,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     const amount=Math.min(shortfall,bankAvail);
     const b=document.createElement('button');
     b.className='btn-primary';
+    b.style.cssText='background:linear-gradient(135deg,#c8920a,#f5a623);color:#fff;border:none';
     b.textContent=L('mDebtBankBtn',fmt(amount),fmt(bankAvail));
     b.onclick=()=>{
       S.loans.bankAmt=(S.loans.bankAmt||0)+amount;
@@ -1737,7 +1753,7 @@ function renderDebtOptions(shortfall,bankAvail,microAvail){
     const amount=Math.min(shortfall,microAvail);
     const b=document.createElement('button');
     b.className='btn-primary';
-    b.style.cssText='background:var(--elevated);border:1px solid var(--border);color:var(--text)';
+    b.style.cssText='background:#7a1a1a;border:1px solid #a02020;color:#fff';
     b.textContent=L('mDebtMicroBtn',fmt(amount),fmt(microAvail));
     b.onclick=()=>{
       S.loans.microAmt=(S.loans.microAmt||0)+amount;
