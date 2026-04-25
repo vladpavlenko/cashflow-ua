@@ -365,6 +365,46 @@
     .lang-btn.active { border-color:var(--gold); color:var(--gold); }
     .lang-btn:hover:not(.active) { border-color:var(--text); color:var(--text); }
     .lang-switcher-fixed { position:fixed; top:10px; right:12px; z-index:200; display:flex; gap:3px; }
+
+    /* ── Slide анімації між вкладками ── */
+    .content {
+      position: relative;
+      overflow-x: hidden;
+    }
+    .tab-pane {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      min-height: 100%;
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .tab-pane.active-pane {
+      position: relative;
+      transform: translateX(0);
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-100%); opacity: 0.6; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0.6; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes slideOutLeft {
+      from { transform: translateX(0);     opacity: 1; }
+      to   { transform: translateX(-100%); opacity: 0.6; }
+    }
+    @keyframes slideOutRight {
+      from { transform: translateX(0);    opacity: 1; }
+      to   { transform: translateX(100%); opacity: 0.6; }
+    }
+    .tab-pane.slide-in-left  { animation: slideInLeft  0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .tab-pane.slide-in-right { animation: slideInRight 0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .tab-pane.slide-out-left  { animation: slideOutLeft  0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards; position: absolute; top: 0; left: 0; right: 0; pointer-events: none; }
+    .tab-pane.slide-out-right { animation: slideOutRight 0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards; position: absolute; top: 0; left: 0; right: 0; pointer-events: none; }
+    .content.swiping { cursor: grabbing; }
+    .tab-pane.dragging { transition: transform 0.05s; position: relative; }
   </style>
 </head>
 <body>
@@ -722,6 +762,11 @@
     </div>
 
   </nav>
+
+  <!-- Індикатор прогресу між вкладками -->
+  <div id="tab-progress" style="position:fixed;bottom:calc(var(--tab-total) + 68px);left:0;right:0;height:2px;z-index:9;padding:0 20px;pointer-events:none">
+    <div id="tp-bar" style="height:2px;background:rgba(245,166,35,0.6);border-radius:1px;transition:left 0.28s cubic-bezier(0.25,0.46,0.45,0.94),width 0.28s cubic-bezier(0.25,0.46,0.45,0.94);position:absolute"></div>
+  </div>
 
   <div class="sum-bar">
     <div class="sum-item inc" onclick="setTab('inc')" style="cursor:pointer"><div class="sum-label" data-i18n="barInc">Дохід</div><div class="sum-val" id="bar-inc">$0</div></div>
@@ -1159,7 +1204,8 @@ function fmt(n){ return '$'+Math.abs(n).toFixed(0); }
 function fmtS(n){ return (n>=0?'+':'−')+fmt(n); }
 
 /* ── Render ── */
-function renderAll(){ renderHdr(); renderBar(); const t=S.tab; if(t==='ov')rOv(); if(t==='inc'){rInc();renderDeals();} if(t==='exp')rExp(); if(t==='crs')rCrs(); if(t==='trn')rTrn(); }
+function renderPane(id){ renderHdr(); renderBar(); if(id==='ov')rOv(); if(id==='inc'){rInc();if(typeof renderDeals==='function')renderDeals();} if(id==='exp')rExp(); if(id==='crs')rCrs(); if(id==='trn')rTrn(); }
+function renderAll(){ renderPane(S.tab); }
 function renderHdr(){
   document.getElementById('hdr-name').textContent=S.playerName;
   document.getElementById('hdr-round').textContent=L('hdrRoundBadge',S.round);
@@ -1193,6 +1239,7 @@ function renderHdr(){
       dot.remove();
     }
   }
+  updateTabProgress();
 }
 function showPassiveInfo(){
   const passive=totalPassiveInc();
@@ -1330,14 +1377,115 @@ function rTrn(){
   el.innerHTML=S.trainings.map(t=>`<div class="trn-row"><div>${t.name}</div><div class="col-r gold">×${(parseFloat(t.mEmp)||1).toFixed(2)}</div><div class="col-r gold">×${(parseFloat(t.mSelf)||1).toFixed(2)}</div><div class="col-r gold">×${(parseFloat(t.mBiz)||1).toFixed(2)}</div><button class="btn-del" onclick="delTraining('${t.id}')">✕</button></div>`).join('');
 }
 
-function setTab(id){
-  S.tab=id;
-  ['ov','inc','exp','crs','trn'].forEach(t=>{
-    document.getElementById('pane-'+t).classList.toggle('hidden',t!==id);
-    document.getElementById('btab-'+t).classList.toggle('active',t===id);
+const TABS_ORDER = ['ov','inc','exp','crs','trn'];
+let _isAnimating = false;
+
+function setTab(id, direction) {
+  if (id === S.tab) return;
+  if (_isAnimating) return;
+
+  const oldId = S.tab;
+  S.tab = id;
+
+  TABS_ORDER.forEach(t => {
+    document.getElementById('btab-' + t)?.classList.toggle('active', t === id);
   });
-  renderAll();
+
+  const oldPane = document.getElementById('pane-' + oldId);
+  const newPane = document.getElementById('pane-' + id);
+
+  if (!oldPane || !newPane) { renderAll(); return; }
+
+  if (!direction) {
+    const oldIdx = TABS_ORDER.indexOf(oldId);
+    const newIdx = TABS_ORDER.indexOf(id);
+    direction = newIdx > oldIdx ? 'left' : 'right';
+  }
+
+  _isAnimating = true;
+
+  newPane.classList.remove('hidden');
+  newPane.classList.add(direction === 'left' ? 'slide-in-right' : 'slide-in-left');
+  oldPane.classList.add(direction === 'left' ? 'slide-out-left' : 'slide-out-right');
+
+  renderPane(id);
+  updateTabProgress();
+
+  setTimeout(() => {
+    newPane.classList.remove('slide-in-right', 'slide-in-left');
+    oldPane.classList.remove('slide-out-left', 'slide-out-right');
+    oldPane.classList.add('hidden');
+    _isAnimating = false;
+  }, 290);
 }
+
+function updateTabProgress() {
+  const bar  = document.getElementById('tp-bar');
+  const wrap = document.getElementById('tab-progress');
+  if (!bar || !wrap) return;
+  const idx   = TABS_ORDER.indexOf(S.tab);
+  const total = TABS_ORDER.length;
+  const wrapW = wrap.offsetWidth;
+  const segW  = wrapW / total;
+  bar.style.width = (segW - 6) + 'px';
+  bar.style.left  = (idx * segW + 3) + 'px';
+}
+
+// ── Свайп між вкладками ──
+(function initSwipe() {
+  const content = document.querySelector('.content');
+  if (!content) return;
+
+  let _startX = 0, _startY = 0, _startTime = 0, _isSwiping = false;
+
+  content.addEventListener('touchstart', e => {
+    _startX    = e.touches[0].clientX;
+    _startY    = e.touches[0].clientY;
+    _startTime = Date.now();
+    _isSwiping = false;
+  }, { passive: true });
+
+  content.addEventListener('touchmove', e => {
+    if (_isAnimating) return;
+    const diffX = e.touches[0].clientX - _startX;
+    const diffY = e.touches[0].clientY - _startY;
+    if (!_isSwiping && Math.abs(diffY) > Math.abs(diffX)) return;
+    if (!_isSwiping && Math.abs(diffX) > 12) _isSwiping = true;
+    if (_isSwiping) {
+      const pane = document.getElementById('pane-' + S.tab);
+      if (pane) {
+        const idx = TABS_ORDER.indexOf(S.tab);
+        const atStart = idx === 0 && diffX > 0;
+        const atEnd   = idx === TABS_ORDER.length - 1 && diffX < 0;
+        const rubber  = atStart || atEnd ? 0.2 : 1;
+        pane.style.transform = `translateX(${diffX * rubber}px)`;
+        pane.style.transition = 'none';
+      }
+    }
+  }, { passive: true });
+
+  content.addEventListener('touchend', e => {
+    const pane = document.getElementById('pane-' + S.tab);
+    if (!_isSwiping) {
+      if (pane) { pane.style.transform = ''; pane.style.transition = ''; }
+      return;
+    }
+    const diffX   = e.changedTouches[0].clientX - _startX;
+    const diffY   = Math.abs(e.changedTouches[0].clientY - _startY);
+    const elapsed = Date.now() - _startTime;
+    const velocity = Math.abs(diffX) / elapsed;
+    if (pane) { pane.style.transform = ''; pane.style.transition = ''; }
+    const triggered = velocity > 0.3 || Math.abs(diffX) > 80;
+    if (diffY > 40 && Math.abs(diffX) < 80) return;
+    if (!triggered || _isAnimating) return;
+    const cur = TABS_ORDER.indexOf(S.tab);
+    if (diffX < 0 && cur < TABS_ORDER.length - 1) {
+      setTab(TABS_ORDER[cur + 1], 'left');
+    } else if (diffX > 0 && cur > 0) {
+      setTab(TABS_ORDER[cur - 1], 'right');
+    }
+  }, { passive: true });
+})();
 
 /* ── Actions ── */
 function setExpField(field,value){S.exp[field]=parseFloat(value)||0;save();fbSync();updateExpTotals();renderBar();}
