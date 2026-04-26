@@ -121,6 +121,7 @@
       --glass-hover:  rgba(255,255,255,0.07);
       --tab-h:        83px;
       --tab-total:    calc(83px + env(safe-area-inset-bottom));
+      --bottom-offset: calc(var(--tab-total) + 76px);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html { height: -webkit-fill-available; }
@@ -192,7 +193,7 @@
     .hdr-reset-btn { background: none; border: none; color: var(--sub); font-size: 18px; cursor: pointer; padding: 2px 4px; line-height: 1; }
     .hdr-reset-btn:hover { color: var(--red); }
 
-    .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--tab-total) + 80px); }
+    .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 100%; padding-bottom: var(--bottom-offset); }
 
     /* Bottom tab bar */
     .bottom-tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-h); padding-bottom: env(safe-area-inset-bottom); padding-top: 8px; background: rgba(10,12,22,0.88); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid var(--glass-border); display: flex; align-items: flex-start; justify-content: space-around; z-index: 20; }
@@ -202,7 +203,7 @@
     .btab:active .btab-icon { transform: scale(0.9); }
     .btab-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; line-height: 1; }
     .btab-dot { display: none; }
-    .tab-pane { padding: 16px; }
+    .tab-pane { padding: 16px; padding-bottom: var(--bottom-offset); }
     #pane-ov { display: flex; flex-direction: column; }
     .sum-bar { position: fixed; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); left: 0; right: 0; background: rgba(10,12,22,0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--glass-border); display: flex; padding: 8px 14px; gap: 8px; z-index: 15; }
     .sum-item { flex: 1; text-align: center; padding: 7px 4px; border-radius: 10px; }
