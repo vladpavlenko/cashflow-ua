@@ -334,7 +334,7 @@ const LANGS = {
     gmCreateBtn:    'Створити нову',
     gmJoinBtn:      'Підключитись',
     gmHint:         '<strong>Створити нову</strong> — генерує код та відкриває кімнату<br><strong>Підключитись</strong> — відкриває існуючу кімнату за кодом',
-    gmPlayerCount:  (n) => `${n} гравець` + (n === 1 ? '' : 'ів'),
+    gmPlayerCount:  (n) => n === 1 ? `${n} гравець` : (n >= 2 && n <= 4) ? `${n} гравці` : `${n} гравців`,
     gmLeaveBtn:     '← Вийти',
     gmRoomBtn:      '⚙️ Кімната',
     gmClearBtn:     '🧹 Очистити всіх гравців',
